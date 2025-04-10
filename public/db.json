@@ -1,0 +1,125 @@
+{
+  "products": [
+    {
+      "id": 1,
+      "name": "Bluetooth Headphones",
+      "description": "Wireless headphones with active noise cancellation providing an unmatched audio experience.",
+      "price": 129.99,
+      "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=2070",
+      "category": "Electronics",
+      "rating": 4.5,
+      "reviews": 128,
+      "slug": "bluetooth-headphones",
+      "stock": 15,
+      "sellerId": 1
+    },
+    {
+      "id": 2,
+      "name": "Sports Smartwatch",
+      "description": "Smart watch with GPS and heart rate monitoring",
+      "price": 249.99,
+      "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=2099",
+      "category": "Electronics",
+      "rating": 4.2,
+      "reviews": 95,
+      "slug": "sports-smartwatch",
+      "stock": 8,
+      "sellerId": 2
+    },
+    {
+      "id": 3,
+      "name": "Mirrorless Camera",
+      "description": "24MP Full Frame professional camera",
+      "price": 1299.99,
+      "image": "https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?q=80&w=2070",
+      "category": "Electronics",
+      "rating": 4.8,
+      "reviews": 74,
+      "slug": "mirrorless-camera",
+      "stock": 5,
+      "sellerId": 1
+    },
+    {
+      "id": 4,
+      "name": "Running Shoes",
+      "description": "Lightweight high-performance running shoes",
+      "price": 119.99,
+      "image": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=2070",
+      "category": "Sports",
+      "rating": 4.3,
+      "reviews": 112,
+      "slug": "running-shoes",
+      "stock": 20,
+      "sellerId": 2
+    },
+    {
+      "id": 5,
+      "name": "Ultraslim Laptop",
+      "description": "Powerful laptop with latest generation processor",
+      "price": 999.99,
+      "image": "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?q=80&w=2071",
+      "category": "Electronics",
+      "rating": 4.7,
+      "reviews": 203,
+      "slug": "ultraslim-laptop",
+      "stock": 3,
+      "sellerId": 3
+    },
+    {
+      "id": 6,
+      "name": "Bluetooth Speaker",
+      "description": "Waterproof portable speaker with great sound quality",
+      "price": 89.99,
+      "image": "https://images.unsplash.com/photo-1608043152269-423dbba4e7e1?q=80&w=2069",
+      "category": "Electronics",
+      "rating": 4.1,
+      "reviews": 87,
+      "slug": "bluetooth-speaker",
+      "stock": 12,
+      "sellerId": 1
+    },
+    {
+      "id": 7,
+      "name": "Waterproof Backpack",
+      "description": "Backpack with laptop compartment and water resistance",
+      "price": 59.99,
+      "image": "https://images.unsplash.com/photo-1491637639811-60e2756cc1c7?q=80&w=2069",
+      "category": "Accessories",
+      "rating": 4.4,
+      "reviews": 56,
+      "slug": "waterproof-backpack",
+      "stock": 25,
+      "sellerId": 3
+    },
+    {
+      "id": 8,
+      "name": "Coffee Table",
+      "description": "Modern coffee table for living room",
+      "price": 149.99,
+      "image": "https://images.unsplash.com/photo-1530018607912-eff2daa1bac4?q=80&w=2071",
+      "category": "Home",
+      "rating": 4.0,
+      "reviews": 42,
+      "slug": "coffee-table-modern",
+      "stock": 7,
+      "sellerId": 2
+    }
+  ],
+  "sellers": [
+    {
+      "id": 1,
+      "name": "TechGadgets Store",
+      "wallet": "8YUVvRFKNBjCNcSsVHA9Jgv3DAUMoc6dHxMXfEpkRhvZ"
+    },
+    {
+      "id": 2,
+      "name": "SportLife Shop",
+      "wallet": "6XU9npvgH8KRQYvUTkK7NhBXJvMNxCiTQ4rRdY5Svt2Y"
+    },
+    {
+      "id": 3,
+      "name": "HomeStyle",
+      "wallet": "4pUQS4Jo2dsfWzt3VgHXy3H1XTgV8NrBUTX57wNKm9TJ"
+    }
+  ]
+}

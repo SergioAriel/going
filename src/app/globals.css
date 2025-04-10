@@ -1,13 +1,53 @@
 @import "tailwindcss";
 
 :root {
+  /* Colores base actualizados para reflejar mejor el logo */
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* Actualización de colores primarios y secundarios para coincidir con el logo */
+  --primary: #14BFFB;
+  --primary-light: #7CDFFF;
+  --primary-dark: #0e9bd9;
+  
+  --secondary: #D300E5;
+  --secondary-light: #F26EFF;
+  --secondary-dark: #a900b8;
+  
+  /* Colores adicionales para crear una paleta más rica */
+  --accent: #f5f5f5;
+  --border: #e5e5e5;
+  --success: #10b981;
+  --error: #ef4444;
+  --warning: #f59e0b;
+  
+  /* Nuevas variables para gradientes inspirados en el logo */
+  --gradient-primary: linear-gradient(135deg, var(--primary-light), var(--primary), var(--primary-dark));
+  --gradient-secondary: linear-gradient(135deg, var(--secondary-light), var(--secondary), var(--secondary-dark));
+  --gradient-brand: linear-gradient(135deg, var(--primary), var(--secondary));
+  
+  /* Variables para elementos gráficos */
+  --dot-size: 4px;
+  --line-thickness: 2px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-primary-dark: var(--primary-dark);
+  --color-secondary: var(--secondary);
+  --color-secondary-light: var(--secondary-light);
+  --color-secondary-dark: var(--secondary-dark);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-warning: var(--warning);
+  --gradient-primary: var(--gradient-primary);
+  --gradient-secondary: var(--gradient-secondary);
+  --gradient-brand: var(--gradient-brand);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -16,11 +56,157 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --accent: #1a1a1a;
+    --border: #2a2a2a;
+    
+    /* Ajustes para modo oscuro */
+    --primary-light: #5BBDFF;
+    --secondary-light: #E54FFF;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Botones actualizados con gradientes */
+.btn-primary {
+  background: var(--primary);
+  background-image: var(--gradient-primary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(20, 191, 251, 0.3);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  background-image: var(--gradient-secondary);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(211, 0, 229, 0.3);
+}
+
+.btn-secondary:active {
+  transform: translateY(0);
+}
+
+/* Nuevas clases para elementos gráficos inspirados en el logo */
+.dot-pattern {
+  position: relative;
+}
+
+.dot-pattern::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: radial-gradient(var(--primary-light) var(--dot-size), transparent var(--dot-size));
+  background-size: 20px 20px;
+  opacity: 0.1;
+  z-index: 0;
+}
+
+.line-pattern {
+  position: relative;
+}
+
+.line-pattern::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: linear-gradient(45deg, var(--primary-light) var(--line-thickness), transparent var(--line-thickness));
+  background-size: 20px 20px;
+  opacity: 0.1;
+  z-index: 0;
+}
+
+/* Clases para tarjetas con efectos mejorados */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Animaciones para microinteracciones */
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.animate-pulse {
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Clases para gradientes */
+.bg-gradient-primary {
+  background-image: var(--gradient-primary);
+}
+
+.bg-gradient-secondary {
+  background-image: var(--gradient-secondary);
+}
+
+.bg-gradient-brand {
+  background-image: var(--gradient-brand);
+}
+
+/* Clases para texto con gradiente */
+.text-gradient {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-primary {
+  background-image: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-secondary {
+  background-image: var(--gradient-secondary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-brand {
+  background-image: var(--gradient-brand);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
 }
