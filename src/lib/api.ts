@@ -35,14 +35,15 @@ interface DbData {
 
 const API_URL_PRODUCTS = process.env.NEXT_PUBLIC_API_URL || '/api/db';
 
-export async function getProducts(): Promise<Product[]> {
+export async function getProducts(): Promise<[]> {
   try {
+    console.log()
     const response = await fetch(API_URL_PRODUCTS);
     if (!response.ok) {
       throw new Error('Failed to fetch products');
     }
-    const data: DbData = await response.json();
-    return data.products;
+    const data = await response.json();
+    return data;
   } catch (error) {
     console.error('Error fetching products:', error);
     return [];
@@ -57,7 +58,7 @@ export async function getProducts(): Promise<Product[]> {
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   try {
     const products = await getProducts();
-    return products.find(product => product.slug === slug) || null;
+    return products.find(product => product?.slug === slug) || null;
   } catch (error) {
     console.error('Error fetching product by slug:', error);
     return null;

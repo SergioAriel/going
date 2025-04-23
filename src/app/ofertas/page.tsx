@@ -404,9 +404,9 @@ const OffersPage = () => {
             </div>
           </div>
           
-          {filteredProducts.length > 0 ? (
+          {filteredProducts?.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
+              {filteredProducts?.map((product) => (
                 <OfferProductCard key={product.id} product={product} />
               ))}
             </div>

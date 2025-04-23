@@ -645,9 +645,9 @@ const CategoryPage = ({ params }: { params: Promise<{ slug: string }> }) => {
             </div>
             
             {/* Product grid */}
-            {filteredProducts.length > 0 ? (
+            {filteredProducts?.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProducts.map((product) => (
+                {filteredProducts?.map((product) => (
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
@@ -674,7 +674,7 @@ const CategoryPage = ({ params }: { params: Promise<{ slug: string }> }) => {
             )}
             
             {/* Pagination */}
-            {filteredProducts.length > 0 && (
+            {filteredProducts?.length > 0 && (
               <div className="mt-12 flex justify-center">
                 <nav className="flex items-center space-x-2">
                   <button className="px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700">

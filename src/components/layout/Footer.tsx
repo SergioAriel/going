@@ -7,7 +7,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About Section */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">SolMarket</h3>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">GOING</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               Buy and sell products using Solana and other payment methods.
               Online marketplace with cryptocurrency support.
@@ -123,7 +123,7 @@ const Footer = () => {
         {/* Bottom Footer */}
         <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-800">
           <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-            &copy; {new Date().getFullYear()} SolMarket. All rights reserved.
+            &copy; {new Date().getFullYear()} GOING. All rights reserved.
           </p>
         </div>
       </div>

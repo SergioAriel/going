@@ -70,14 +70,7 @@ const Header = () => {
               <span>Offers</span>
               <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
             </Link>
-            <Link 
-              href="/sell" 
-              className="text-gray-600 hover:text-primary dark:text-gray-300 dark:hover:text-primary relative group"
-            >
-              <span>Sell</span>
-              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-primary transition-all duration-300 group-hover:w-full"></span>
-            </Link>
-          </nav>
+            </nav>
           
           {/* User actions */}
           <div className="flex items-center space-x-4">

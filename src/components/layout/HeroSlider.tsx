@@ -11,7 +11,7 @@ const slides = [
     title: 'Welcome to Going',
     subtitle: 'Your marketplace with cryptocurrency payments',
     html: (index: number, currentSlide: number) =>
-      <section className={`absolute w-full h-full flex bg-black items-center justify-center transition-all ease-in-out duration-1500 ${index === currentSlide
+      <section key={currentSlide} className={`absolute w-full h-full flex bg-black items-center justify-center transition-all ease-in-out duration-1500 ${index === currentSlide
         ? 'opacity-100 scale-100'
         : 'opacity-0 scale-105'
         }`}>

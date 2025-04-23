@@ -179,8 +179,8 @@ const ProductsPage = () => {
         }
         const data = await response.json();
         console.log("Products loaded on products page:", data.products);
-        setProducts(data.products);
-        setFilteredProducts(data.products);
+        setProducts(data?.products || []);
+        setFilteredProducts(data?.products || []);
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading products:", error);
@@ -340,7 +340,7 @@ const ProductsPage = () => {
                 />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{error}</h2>
               </div>
-            ) : filteredProducts.length === 0 ? (
+            ) : filteredProducts?.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
                 <Image 
                   src="https://images.unsplash.com/photo-1580169980114-ccd0babfa840?q=80&w=2070" 
@@ -367,11 +367,11 @@ const ProductsPage = () => {
               <>
                 <div className="flex justify-between items-center mb-4">
                   <p className="text-gray-600 dark:text-gray-400">
-                    Showing {filteredProducts.length} products
+                    Showing {filteredProducts?.length} products
                   </p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredProducts.map((product) => (
+                  {filteredProducts?.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>

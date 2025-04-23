@@ -1,20 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { 
-  UserIcon, 
-  ShoppingBagIcon, 
-  HeartIcon, 
-  CreditCardIcon, 
-  TruckIcon, 
+import {
+  UserIcon,
+  ShoppingBagIcon,
+  HeartIcon,
+  CreditCardIcon,
+  TruckIcon,
   CogIcon,
-  KeyIcon,
   BellIcon,
   ArrowRightIcon,
-  ArrowRightStartOnRectangleIcon
+  ArrowRightStartOnRectangleIcon,
+  DocumentDuplicateIcon,
+  ArrowLeftEndOnRectangleIcon
 } from "@heroicons/react/24/outline";
+import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
+import { useFundWallet } from "@privy-io/react-auth/solana";
+
 
 // Type for user data
 interface UserData {
@@ -22,26 +26,28 @@ interface UserData {
   email: string;
   avatar: string;
   joined: string;
+  location: string;
+  bio: string;
+  website: string;
+  twitter: string;
+  x: string;
+  instagram: string;
+  telegram: string;
+  facebook: string;
 }
+
 
 // Available profile tabs
 const tabs = [
   { id: "account", name: "My Account", icon: UserIcon },
   { id: "orders", name: "Orders", icon: ShoppingBagIcon },
   { id: "wishlist", name: "Wishlist", icon: HeartIcon },
-  { id: "payment", name: "Payment Methods", icon: CreditCardIcon },
+  { id: "payment", name: "Associated Wallets", icon: CreditCardIcon },
   { id: "addresses", name: "Addresses", icon: TruckIcon },
+  { id: "selling", name: "My Products", icon: ShoppingBagIcon },
   { id: "notifications", name: "Notifications", icon: BellIcon },
   { id: "settings", name: "Settings", icon: CogIcon },
 ];
-
-// Example user
-const userData: UserData = {
-  name: "Carlos Rodríguez",
-  email: "carlos@example.com",
-  avatar: "https://images.unsplash.com/photo-1633332755192-727a05c4013d?q=80&w=2080",
-  joined: "January 2023",
-};
 
 const orderHistory = [
   {
@@ -74,13 +80,31 @@ const orderHistory = [
   }
 ];
 const ProfilePage = () => {
+  const { ready, authenticated, user } = usePrivy()
   const [activeTab, setActiveTab] = useState("account");
-  
+  const [userData, setUserData] = useState<UserData>({
+    name: "going",
+    email: "going@example.com",
+    avatar: "/goingLogo1.png",
+    joined: "January 2023",
+    location: "Mexico City, Mexico",
+    bio: "Software developer and tech enthusiast.",
+    website: "https://carlosrodriguez.dev",
+    twitter: "https://twitter.com/carlosrodriguez",
+    x: "https://twitter.com/carlosrodriguez",
+    instagram: "https://instagram.com/carlosrodriguez",
+    telegram: "https://t.me/carlosrodriguez",
+    facebook: "https://facebook.com/carlosrodriguez",
+  });
+
+  const { login } = useLogin()
+  const { logout } = useLogout()
+
   // Content to display based on the selected tab
   const renderTabContent = () => {
     switch (activeTab) {
       case "account":
-        return <AccountTab userData={userData} />;
+        return <AccountTab userData={userData} setUserData={setUserData} />;
       case "orders":
         return <OrdersTab />;
       case "wishlist":
@@ -91,18 +115,95 @@ const ProfilePage = () => {
         return <AddressesTab />;
       case "notifications":
         return <NotificationsTab />;
+      case "selling":
+        return <SellingTab />;
       case "settings":
         return <SettingsTab />;
       default:
-        return <AccountTab userData={userData} />;
+        return <AccountTab userData={userData} setUserData={setUserData} />;
     }
   };
 
+  useEffect(() => {
+    if (ready && authenticated) {
+      (async () => {
+        try {
+          console.log(user?.id.length)
+
+          const res = await fetch(`/api/users?_id=${user?.id.split("did:privy:")[1]}`)
+          const resUserData = await res.json();
+          console.log(res.ok)
+          if (res.ok) {
+            setUserData((prev) => ({
+              ...prev,
+              ...resUserData
+            }))
+            return
+          }
+
+          // Fetch user data or perform any necessary actions
+          console.log("Creando usuario");
+          const defaultUserData = {
+            name: "unknown",
+            email: "",
+            avatar: "",
+            joined: "",
+            location: "",
+            bio: "",
+            website: "",
+            twitter: "",
+            x: "",
+            instagram: "",
+            telegram: "",
+            facebook: "",
+          }
+
+          setUserData(defaultUserData)
+          fetch("/api/users", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              _id: user?.id.split("did:privy:")[1]
+
+            })
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("Network response was not ok");
+              }
+              return response.json();
+            })
+            .then((data) => {
+              // Handle the user data
+              console.log("User data:", data);
+            })
+            .catch((error) => {
+              console.error("Error fetching user data:", error);
+            });
+        } catch (error) {
+          console.log(error)
+        }
+
+      })();
+    }
+  }, [ready, authenticated]);
+
+  const handlerLogin = async () => {
+    try {
+      await login();
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  }
+
   return (
+
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">My Profile</h1>
-        
+
         <div className="flex flex-col md:flex-row gap-8">
           {/* Navigation Sidebar */}
           <div className="md:w-1/4">
@@ -110,7 +211,7 @@ const ProfilePage = () => {
               <div className="flex items-center space-x-4 mb-6">
                 <div className="relative h-16 w-16 rounded-full overflow-hidden">
                   <Image
-                    src={userData.avatar}
+                    src={userData.avatar || "/goingLogo1.png"}
                     alt={userData.name}
                     fill
                     className="object-cover"
@@ -121,32 +222,50 @@ const ProfilePage = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">{userData.email}</p>
                 </div>
               </div>
-              
+
               <div className="space-y-1">
-                {tabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
-                      activeTab === tab.id
-                        ? "bg-primary text-white"
-                        : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    }`}
-                  >
-                    <tab.icon className="h-5 w-5" />
-                    <span>{tab.name}</span>
-                  </button>
-                ))}
-                
+                {
+                  tabs.map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      disabled={!(ready && authenticated)}
+                      className={
+                        `
+                          w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors 
+                          ${activeTab === tab.id ? "bg-primary text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}
+                          ${!(ready && authenticated) && "cursor-not-allowed"}
+                        `
+                      }
+                    >
+                      <tab.icon className="h-5 w-5" />
+                      <span>{tab.name}</span>
+                    </button>
+                  ))
+                }
                 {/* Logout Button */}
-                <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                  <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
-                  <span>Log Out</span>
-                </button>
+                {
+                  !(ready && authenticated) ?
+                    <button
+                      className="cursor-pointer w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={handlerLogin}
+                    >
+                      <ArrowLeftEndOnRectangleIcon className="h-5 w-5" />
+                      <span>Log In</span>
+                    </button>
+                    :
+                    <button
+                      className="cursor-pointer w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      onClick={() => logout()}
+                    >
+                      <ArrowRightStartOnRectangleIcon className="h-5 w-5" />
+                      <span>Log Out</span>
+                    </button>
+                }
               </div>
             </div>
           </div>
-          
+
           {/* Main Content */}
           <div className="md:w-3/4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -160,12 +279,65 @@ const ProfilePage = () => {
 };
 
 // Components for each tab
-const AccountTab = ({ userData }: { userData: UserData }) => {
+const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData: Dispatch<SetStateAction<UserData>> }) => {
+  const { ready, authenticated } = usePrivy();
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Personal Information</h2>
-      
       <form className="space-y-6">
+        <div
+          className="flex flex-col gap-8 items-center rounded-lg p-6 text-center"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(ready && authenticated) ? (e) => {
+
+            e.preventDefault();
+            const file = e.dataTransfer.files;
+            if (file) {
+              setUserData((prev) => ({
+                ...prev,
+                avatar: URL.createObjectURL(file[0]),
+              }));
+            }
+          }
+            : undefined
+          }
+        >
+          <div className="relative h-24 w-24 rounded-full overflow-hidden">
+            <Image
+              src={userData.avatar || "/goingLogo1.png"}
+              alt={userData.name}
+              fill
+              className="object-cover"
+            />
+          </div>
+          <div className="space-y-2">
+            <p className="text-gray-700 dark:text-gray-300">
+              Drag and drop images or
+            </p>
+            <label
+              htmlFor="imageUpload"
+              className="text-primary hover:text-primary-dark font-medium"
+            >
+              Upload images
+            </label>
+            <input
+              id="imageUpload"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setUserData((prev) => ({
+                    ...prev,
+                    avatar: URL.createObjectURL(file),
+                  }));
+                }
+              }}
+              type="file"
+              multiple
+              className="hidden"
+              accept="image/*"
+            />
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -178,7 +350,7 @@ const AccountTab = ({ userData }: { userData: UserData }) => {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
-          
+
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Email Address
@@ -190,7 +362,7 @@ const AccountTab = ({ userData }: { userData: UserData }) => {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
-          
+
           <div>
             <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Phone Number
@@ -202,7 +374,7 @@ const AccountTab = ({ userData }: { userData: UserData }) => {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
-          
+
           <div>
             <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Date of Birth
@@ -213,50 +385,96 @@ const AccountTab = ({ userData }: { userData: UserData }) => {
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
+
+          <div>
+            <label htmlFor="location" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Location
+            </label>
+            <input
+              type="text"
+              id="location"
+              defaultValue={userData.location}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Bio
+            </label>
+            <textarea
+              id="bio"
+              defaultValue={userData.bio}
+              rows={3}
+              className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+
         </div>
-        
+
         <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-            <KeyIcon className="h-5 w-5 mr-2" />
-            Change Password
-          </h3>
-          
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Social Media Links</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
             <div>
-              <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Current Password
+              <label htmlFor="website" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Website
               </label>
               <input
-                type="password"
-                id="currentPassword"
+                type="url"
+                id="website"
+                placeholder="Enter your website URL"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
               />
             </div>
-            
             <div>
-              <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                New Password
+              <label htmlFor="x" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                X
               </label>
               <input
-                type="password"
-                id="newPassword"
+                type="url"
+                id="x"
+                placeholder="Enter your X profile URL"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
               />
             </div>
-            
+
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Confirm Password
+              <label htmlFor="facebook" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Facebook
               </label>
               <input
-                type="password"
-                id="confirmPassword"
+                type="url"
+                id="facebook"
+                placeholder="Enter your Facebook profile URL"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="instagram" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Instagram
+              </label>
+              <input
+                type="url"
+                id="instagram"
+                placeholder="Enter your Instagram profile URL"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              />
+            </div>
+            <div>
+              <label htmlFor="telegram" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Telegram
+              </label>
+              <input
+                type="url"
+                id="telegram"
+                placeholder="Enter your Telegram profile URL"
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
           <button
             type="submit"
@@ -274,7 +492,7 @@ const OrdersTab = () => {
   return (
     <div className="p-6">
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Orders</h2>
-      
+
       <div className="space-y-6">
         {orderHistory.map((order) => (
           <div key={order.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
@@ -286,11 +504,11 @@ const OrdersTab = () => {
                   <span className="text-gray-500 dark:text-gray-400 text-sm">{order.date}</span>
                 </div>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2
-                  ${order.status === "Delivered" 
-                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" 
-                    : order.status === "In Transit" 
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                    : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
+                  ${order.status === "Delivered"
+                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                    : order.status === "In Transit"
+                      ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                      : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                   }`}
                 >
                   {order.status}
@@ -306,7 +524,7 @@ const OrdersTab = () => {
                 </Link>
               </div>
             </div>
-            
+
             <div className="p-4">
               <ul className="space-y-3">
                 {order.items.map((item, index) => (
@@ -331,11 +549,11 @@ const WishlistTab = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Wishlist</h2>
-      
+
       <div className="text-center py-8">
         <HeartIcon className="h-12 w-12 mx-auto text-gray-400" />
         <p className="mt-4 text-gray-600 dark:text-gray-400">Your wishlist is empty</p>
-        <Link 
+        <Link
           href="/products"
           className="mt-4 inline-block px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
         >
@@ -347,58 +565,96 @@ const WishlistTab = () => {
 };
 
 const PaymentTab = () => {
+  const { user, linkWallet, unlinkWallet } = usePrivy();
+  const { fundWallet } = useFundWallet();
+
+  const handlerFundWallet = async (address: string) => {
+    await fundWallet(address,
+      {
+        cluster: { name: "devnet" },
+        amount: "0.1",
+      }
+    );
+  }
   return (
-    <div>
-      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Payment Methods</h2>
-      
+    <>
       <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Saved Cards</h3>
-          <button className="text-primary hover:text-primary-dark">+ Add Card</button>
-        </div>
-        
-        <div className="space-y-4">
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
-            <div className="flex items-center space-x-4">
-              <div className="h-10 w-14 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-sm font-medium">
-                VISA
-              </div>
-              <div>
-                <div className="text-gray-900 dark:text-white font-medium">•••• •••• •••• 4242</div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">Expires: 09/25</div>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <button className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary">Edit</button>
-              <button className="text-gray-500 hover:text-error dark:text-gray-400 dark:hover:text-error">Delete</button>
-            </div>
-          </div>
-        </div>
-        
-        <div className="mt-8">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Crypto Wallets</h3>
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="h-10 w-14 bg-gray-200 dark:bg-gray-700 rounded flex items-center justify-center text-sm font-medium">
-                  SOL
-                </div>
-                <div>
-                  <div className="text-gray-900 dark:text-white font-medium">Solana Wallet</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Connected</div>
-                </div>
-              </div>
-              <button className="text-primary hover:text-primary-dark">
-                Disconnect
-              </button>
-            </div>
-          </div>
-          <button className="mt-4 px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
-            + Connect New Wallet
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Wallets</h3>
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={linkWallet}
+            className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors"
+          >
+            + Connect Wallet
           </button>
         </div>
+        {
+          user?.linkedAccounts.map((account) => {
+            if (account.type === "wallet") {
+              return (
+                <div key={account.address} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
+                  <div className="flex items-center space-x-4">
+                    <div>
+                      <div className="flex text-gray-900 dark:text-white font-medium">
+                        <Link href={`/wallet/${account.address}`} className="mr-2 hover:text-primary">
+                          {account.address.slice(0, 6)}...{account.address.slice(-4)}
+                        </Link>
+                        <DocumentDuplicateIcon className="w-4 h-4 cursor-pointer" onClick={() => navigator.clipboard.writeText(account.address)} />
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">Connected</div>
+                    </div>
+                  </div>
+                  <div className='flex flex-col items-end'>
+                    {
+                      account.connectorType !== "embedded" &&
+                      <button onClick={() => unlinkWallet(account.address)} className="text-primary hover:text-primary-dark">
+                        Unlinked Wallet
+                      </button>
+                    }
+                    <button
+                      onClick={() => handlerFundWallet(account.address)}
+                      className="text-primary hover:text-primary-dark"
+                    >
+                      Funding Wallet
+                    </button>
+                  </div>
+                </div>
+              )
+            }
+            else {
+              return null;
+            }
+          })
+        }
+
+
+
       </div>
-    </div>
+
+      {/* <div className="absolute h-screen w-screen backdrop-blur-md top-0 left-0">
+          <div className="absolute -translate-1/2 top-1/2 left-1/2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 w-96">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Fund Wallet</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Fund your wallet with SOL to start using our services.
+            </p>
+            <div className="flex items-center space-x-4 mb-4">
+              <input
+                type="text"
+                value={dialogFoundWallet.address}
+                readOnly
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+              />
+              <button
+                className="px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
+                onClick={() => }
+              >
+                Fund
+              </button>
+
+            </div>
+          </div>
+        </div> */}
+    </>
   );
 };
 
@@ -406,13 +662,15 @@ const AddressesTab = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Addresses</h2>
-      
+
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">Saved Addresses</h3>
-          <button className="text-primary hover:text-primary-dark">+ Add Address</button>
+          <button className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors">
+            + Add Address
+          </button>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
             <div className="flex justify-between">
@@ -445,7 +703,7 @@ const NotificationsTab = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Notification Preferences</h2>
-      
+
       <div className="space-y-6">
         <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Email Notifications</h3>
@@ -472,7 +730,7 @@ const NotificationsTab = () => {
             </div>
           </div>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Push Notifications</h3>
           <div className="space-y-4">
@@ -498,7 +756,7 @@ const NotificationsTab = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
           <button
             type="button"
@@ -516,7 +774,7 @@ const SettingsTab = () => {
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Account Settings</h2>
-      
+
       <div className="space-y-6">
         <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Language Preferences</h3>
@@ -535,7 +793,7 @@ const SettingsTab = () => {
             </select>
           </div>
         </div>
-        
+
         <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Preferred Currency</h3>
           <div>
@@ -554,7 +812,7 @@ const SettingsTab = () => {
             </select>
           </div>
         </div>
-        
+
         <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Theme</h3>
           <div className="flex items-center space-x-4">
@@ -572,7 +830,7 @@ const SettingsTab = () => {
             </button>
           </div>
         </div>
-        
+
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Security Options</h3>
           <div className="space-y-4">
@@ -596,7 +854,7 @@ const SettingsTab = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end">
           <button
             type="button"
@@ -605,6 +863,47 @@ const SettingsTab = () => {
             Save Settings
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const SellingTab = () => {
+  const userProducts = [
+    { id: "PROD-001", name: "Wireless Earbuds", price: 49.99, status: "Active" },
+    { id: "PROD-002", name: "Gaming Mouse", price: 29.99, status: "Inactive" },
+  ];
+
+  return (
+    <div>
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Products</h2>
+
+      <div className="flex justify-end mb-4">
+        <Link
+          href="/sell"
+          className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors"
+        >
+          + Add New Product
+        </Link>
+      </div>
+
+      <div className="space-y-4">
+        {userProducts.map((product) => (
+          <div key={product.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">{product.name}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">${product.price.toFixed(2)}</p>
+            </div>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-medium ${product.status === "Active"
+                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
+                : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                }`}
+            >
+              {product.status}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

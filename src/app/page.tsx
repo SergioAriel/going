@@ -1,32 +1,38 @@
-'use client'
+
 
 import ProductCard from "@/components/products/ProductCard";
 import HeroSlider from "@/components/layout/HeroSlider";
-import { getProducts, Product } from "@/lib/api";
+// import { getProducts, Product } from "@/lib/api";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { usePrivy } from "@privy-io/react-auth";
+import client from "@/lib/mongodb";
+// import { useEffect, useState } from "react";
 
-export default function Home() {
+
+export default async function Home() {
   // const products = await getProducts();
   // const [products, setProducts] = useState([]);
-  const [ featuredProducts, setFeaturedProducts ] = useState<Product[]>([]);
-  const { ready } = usePrivy()
+  // const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+
 
   // Load products from db.json
-  useEffect(() => {
-    (async () => {
-    const products = await getProducts();
-    const featuredProducts = products.slice(0, 8);
-    setFeaturedProducts(featuredProducts);
-    console.log("Featured Products:", featuredProducts);
-    })();
-  }, []);
+  // useEffect(() => {
+  //   (async () => {
+  //     const products = await getProducts();
+  //     // const featuredProducts = products.slice(0, 8);
+  //     // setFeaturedProducts(featuredProducts);
+  //     console.log("Featured Products:", products);
+  //   })();
+  // }, []);
 
+  const db = client.db("sample_mflix");
+  const movies = await db
+      .collection("movies")
+      .find({})
+      .sort({ metacritic: -1 })
+      .limit(10)
+      .toArray();
+      console.log("Movies:", movies);
 
-  console.log(ready)
-
-  // Filter products to get only those that are featured
 
   return (
     <main className="min-h-screen">
@@ -49,9 +55,11 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {
+            // featuredProducts.map((product) => (
+            //   <ProductCard key={product.id} product={product} />
+            // ))
+            }
           </div>
         </div>
       </section>
