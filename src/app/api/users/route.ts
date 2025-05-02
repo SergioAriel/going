@@ -12,6 +12,7 @@ cloudinary.config({
 interface UserData {
     _id: string;
     name: string;
+    addresses: Array<string>;
     email: string;
     avatar: string;
     joined: string;
@@ -30,19 +31,17 @@ export const GET = async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams
     const _id= searchParams.get('_id')
     const db = client.db("going");
-    console.log("ID", _id)
     if (!_id) {
         return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
     const user = await db.collection("users").findOne({ '_id': _id });
     if (!user) {
-        return NextResponse.json({ error: "User not found" }, { status: 404 });
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
-
-    console.log(user)
     const userData: UserData = {
         _id: user._id.toString(),
         name: user.name,
+        addresses: user.addresses,
         email: user.email,
         avatar: user.avatar,
         location: user.location,
@@ -55,16 +54,17 @@ export const GET = async (request: NextRequest) => {
         facebook: user.facebook,
         joined: user.joined,
     }
-    return NextResponse.json({ user: userData }, { status: 200 });
+    
+    return NextResponse.json(userData, { status: 200 });
 }
 
 export const POST = async (request: Request) => {
-    const { _id } = await request.json();
+    const user = await request.json();
 
     const resultUpload = new Promise(async (resolve) => {
 
         const db = client.db("going");
-        const newUser = await db.collection("users").insertOne({ _id: _id });
+        const newUser = await db.collection("users").insertOne(user);
         console.log("Product added to database:", newUser);
         resolve(newUser);
         return
@@ -81,6 +81,7 @@ export const PUT = async (request: Request) => {
     const userData: UserData = {
         _id: body.get("id") as string,
         name: body.get("name") as string,
+        addresses: body.get("addresses") ? (body.get("addresses") as string).split(",") : [],
         email: body.get("email") as string,
         avatar: body.get("image") as string,
         location: body.get("location") as string,

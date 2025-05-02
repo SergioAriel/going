@@ -37,7 +37,6 @@ const API_URL_PRODUCTS = process.env.NEXT_PUBLIC_API_URL || '/api/db';
 
 export async function getProducts(): Promise<[]> {
   try {
-    console.log()
     const response = await fetch(API_URL_PRODUCTS);
     if (!response.ok) {
       throw new Error('Failed to fetch products');

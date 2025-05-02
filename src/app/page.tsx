@@ -24,15 +24,6 @@ export default async function Home() {
   //   })();
   // }, []);
 
-  const db = client.db("sample_mflix");
-  const movies = await db
-      .collection("movies")
-      .find({})
-      .sort({ metacritic: -1 })
-      .limit(10)
-      .toArray();
-      console.log("Movies:", movies);
-
 
   return (
     <main className="min-h-screen">

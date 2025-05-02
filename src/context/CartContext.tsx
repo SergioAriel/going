@@ -1,43 +1,15 @@
 "use client";
 
+import { CartItem, Product } from "@/interfaces";
 import React, { createContext, useContext, useState, ReactNode } from "react";
 
 // Definir tipo de producto para evitar uso de 'any'
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  offerPrice?: number;
-  isOffer?: boolean;
-  image?: string;
-  images?: string[];
-  slug: string;
-  acceptSolana?: boolean;
-  acceptCredit?: boolean;
-  acceptGooglePay?: boolean;
-  acceptApplePay?: boolean;
-  acceptedCryptos?: string[];
-}
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  image: string;
-  quantity: number;
-  slug: string;
-  acceptSolana?: boolean;
-  acceptCredit?: boolean;
-  acceptGooglePay?: boolean;
-  acceptApplePay?: boolean;
-  acceptedCryptos?: string[];
-}
 
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: Product, quantity: number) => void;
-  removeFromCart: (productId: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
+  removeFromCart: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
@@ -50,37 +22,34 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const addToCart = (product: Product, quantity: number) => {
     setItems(prevItems => {
-      const existingItem = prevItems.find(item => item.id === product.id);
+      const existingItem = prevItems.find(item => item._id === product._id);
       
       if (existingItem) {
         return prevItems.map(item => 
-          item.id === product.id 
+          item._id === product._id 
             ? { ...item, quantity: item.quantity + quantity } 
             : item
         );
       } else {
         return [...prevItems, {
-          id: product.id,
+          _id: product._id,
           name: product.name,
-          price: product.isOffer ? product.offerPrice! : product.price,
-          image: Array.isArray(product.images) ? product.images[0] : (product.image || ''),
+          price: product.price,
+          priceOffer: product.isOffer && product.offerPercentage ? product.price - (product.price * product.offerPercentage) : false,
+          mainImage: product.mainImage,
           quantity,
-          slug: product.slug,
-          acceptSolana: product.acceptSolana || false,
-          acceptCredit: product.acceptCredit || false,
-          acceptGooglePay: product.acceptGooglePay || false,
-          acceptApplePay: product.acceptApplePay || false,
-          acceptedCryptos: product.acceptedCryptos || []
+          addressWallet: product.addressWallet,
+          currency: product.currency || 'USD'
         }];
       }
     });
   };
 
-  const removeFromCart = (productId: number) => {
-    setItems(prevItems => prevItems.filter(item => item.id !== productId));
+  const removeFromCart = (productId: string) => {
+    setItems(prevItems => prevItems.filter(item => item._id !== productId));
   };
 
-  const updateQuantity = (productId: number, quantity: number) => {
+  const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(productId);
       return;
@@ -88,7 +57,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     setItems(prevItems =>
       prevItems.map(item =>
-        item.id === productId ? { ...item, quantity } : item
+        item._id === productId ? { ...item, quantity } : item
       )
     );
   };
@@ -102,7 +71,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getTotalPrice = () => {
-    console.log(items)
     return items.reduce((total, item) => total + item.price * item.quantity, 0);
   };
 

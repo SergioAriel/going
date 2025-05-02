@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { DragEvent, useState } from "react";
 import Link from "next/link";
 import {
   PhotoIcon,
@@ -11,33 +11,17 @@ import {
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
+import { CreateProduct } from "@/interfaces";
 
 
-interface FormData {
-  userID: string;
-  stock?: number;
-  location?: string;
-  condition?: string;
-  name: string;
-  description: string;
-  category: string;
-  price: string;
-  currency: string;
-  images: Array<File>;
-  tags?: string;
-  isService?: boolean;
-  acceptSolana?: boolean;
-  acceptCredit?: boolean;
-}
-
-const SellerPage = () => {
+const UploadProduct = () => {
   const { user } = usePrivy();
-  const [formData, setFormData] = useState<FormData>({
+  const [infoProduct, setInfoProduct] = useState<CreateProduct>({
     userID: user?.id.split('did:privy:')[1] || "",
     name: "",
     description: "",
     category: "",
-    price: "",
+    price: 0,
     currency: "USD",
     stock: 0,
     location: "",
@@ -45,9 +29,9 @@ const SellerPage = () => {
     images: [] as Array<File>,
     tags: "",
     isService: false,
-    acceptSolana: true,
-    acceptCredit: true,
+    addressWallet: "",
   });
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
   const categories = [
     "Electronics",
@@ -64,50 +48,82 @@ const SellerPage = () => {
   const currencies = [
     { value: "USD", label: "USD - United States Dollar" },
     { value: "EUR", label: "EUR - Euro" },
-    { value: "MXN", label: "MXN - Mexican Peso" },
+    { value: "ARS", label: "ARS - Argentinian Peso" },
     { value: "SOL", label: "SOL - Solana" },
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === "stock" || name === "price") {
+      setInfoProduct(prev => ({ ...prev, [name]: parseFloat(value) }));
+      return
+    }
+    if (name === "tags") {
+      setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim()).join(", ") }));
+      return
+    }
+    setInfoProduct(prev => ({ ...prev, [name]: value }));
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, checked } = e.target;
-    setFormData(prev => ({ ...prev, [name]: checked }));
+    setInfoProduct(prev => ({ ...prev, [name]: checked }));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      setFormData(({ ...formData, images: Array.from(files) }));
+      setInfoProduct(({ ...infoProduct, images: [...infoProduct.images, ...Array.from(files)] }));
     }
   };
-  // const handleImageRemove = (image: string) => {
-  //   setFormData(prev => ({ ...prev, images: prev.images.filter(img => img !== image) }));
-  // };
+  const handleImageRemove = (index: number) => {
+    setInfoProduct(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== index) }));
+  };
+
+  const handleDrop = (dropIndex: number) => {
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      return; // No change needed
+    }
+
+    const imagesArray = [...infoProduct.images];
+    const [draggedImage] = imagesArray.splice(draggedIndex, 1);
+    imagesArray.splice(dropIndex, 0, draggedImage);
+
+    // Update the state with the new order
+    setInfoProduct({
+      ...infoProduct,
+      images: imagesArray,
+    });
+
+    // Reset the dragged index
+    setDraggedIndex(null);
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const formDataToSend = new FormData();
 
-    Object.entries(formData).forEach(([key, value]) => {
+    Object.entries(infoProduct).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach((item) => formDataToSend.append(key, item));
+        value.forEach((item) => {
+          formDataToSend.append(key, item)
+        });
       } else {
         formDataToSend.append(key, typeof value === "boolean" ? value.toString() : value);
       }
     });
     // Logic to send data to the server would go here
     const requiredFields = ["name", "description", "category", "price", "currency", "images"];
-    const isValid = requiredFields.every(field => formData[field as keyof typeof formData] !== "");
+    const isValid = requiredFields.every(field => infoProduct[field as keyof typeof infoProduct] !== "");
+
 
     if (!isValid) {
       alert("Please fill in all required fields.");
       return;
     }
+
     // Logic to send data to the server would go here
     fetch("/api/products", {
       method: "POST",
@@ -144,7 +160,7 @@ const SellerPage = () => {
                       type="text"
                       id="name"
                       name="name"
-                      value={formData.name}
+                      value={infoProduct.name}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                       placeholder="E.g. Bluetooth Headphones"
@@ -159,7 +175,7 @@ const SellerPage = () => {
                     <textarea
                       id="description"
                       name="description"
-                      value={formData.description}
+                      value={infoProduct.description}
                       onChange={handleInputChange}
                       rows={4}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
@@ -176,7 +192,7 @@ const SellerPage = () => {
                       <select
                         id="category"
                         name="category"
-                        value={formData.category}
+                        value={infoProduct.category}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
                         required
@@ -199,7 +215,7 @@ const SellerPage = () => {
                       type="number"
                       id="stock"
                       name="stock"
-                      value={formData.stock}
+                      value={infoProduct?.stock?.toString()}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                       placeholder="E.g. 10"
@@ -214,7 +230,7 @@ const SellerPage = () => {
                       type="text"
                       id="location"
                       name="location"
-                      value={formData.location}
+                      value={infoProduct.location}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                       placeholder="E.g. New York, USA"
@@ -228,7 +244,7 @@ const SellerPage = () => {
                     <select
                       id="condition"
                       name="condition"
-                      value={formData.condition}
+                      value={infoProduct.condition}
                       onChange={handleInputChange}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                     >
@@ -244,7 +260,7 @@ const SellerPage = () => {
                       id="isService"
                       name="isService"
                       type="checkbox"
-                      checked={formData.isService}
+                      checked={infoProduct.isService}
                       onChange={handleCheckboxChange}
                       className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
                     />
@@ -263,7 +279,7 @@ const SellerPage = () => {
                         type="text"
                         id="tags"
                         name="tags"
-                        value={formData.tags}
+                        value={infoProduct.tags}
                         onChange={handleInputChange}
                         className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                         placeholder="E.g. headphones, wireless, bluetooth (separated by commas)"
@@ -278,10 +294,48 @@ const SellerPage = () => {
 
 
               {/* Price and Payment Methods */}
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+              <div className="flex flex-col gap-6 p-6 border-b border-gray-200 dark:border-gray-700">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
                   Price and Payment Methods
                 </h2>
+
+                <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Wallet Address
+                  </label>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    Select the wallet address where you want to receive payments.
+                  </p>
+                  <select
+                    id="addressWallet"
+                    name="addressWallet"
+                    value={!!(user?.linkedAccounts[0]?.type === "wallet") ? user?.linkedAccounts[0]?.address : ""}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="" disabled>Select a wallet</option>
+                    {
+                      !user?.linkedAccounts.length ?
+                        <option value="" disabled>
+                          No wallets linked. Please link a wallet to your account.
+                        </option>
+                        :
+                        user?.linkedAccounts.map((account) => {
+                          if (account.type === "wallet") {
+                            return (
+                              <option key={account.address} value={account.address}>
+                                {account.address}
+                              </option>
+                            )
+                          }
+                        })
+                    }
+
+
+                  </select>
+                </div>
+
+
 
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -296,7 +350,7 @@ const SellerPage = () => {
                           step="0.01"
                           id="price"
                           name="price"
-                          value={formData.price}
+                          value={infoProduct.price}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           placeholder="0.00"
@@ -313,7 +367,7 @@ const SellerPage = () => {
                         <select
                           id="currency"
                           name="currency"
-                          value={formData.currency}
+                          value={infoProduct.currency}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
                           required
@@ -324,42 +378,6 @@ const SellerPage = () => {
                         </select>
                         <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
                       </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      Accepted payment methods
-                    </p>
-                    <div className="space-y-3">
-                      <div className="flex items-center">
-                        <input
-                          id="acceptSolana"
-                          name="acceptSolana"
-                          type="checkbox"
-                          checked={formData.acceptSolana}
-                          onChange={handleCheckboxChange}
-                          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                        />
-                        <label htmlFor="acceptSolana" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                          Accept payments with Solana
-                        </label>
-                      </div>
-
-                      <div className="flex items-center">
-                        <input
-                          id="acceptCredit"
-                          name="acceptCredit"
-                          type="checkbox"
-                          checked={formData.acceptCredit}
-                          onChange={handleCheckboxChange}
-                          className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
-                        />
-                        <label htmlFor="acceptCredit" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                          Accept payments with credit/debit card
-                        </label>
-                      </div>
-
                     </div>
                   </div>
                 </div>
@@ -381,7 +399,7 @@ const SellerPage = () => {
                       e.preventDefault();
                       const files = e.dataTransfer.files;
                       if (files) {
-                        setFormData((prev) => ({
+                        setInfoProduct((prev) => ({
                           ...prev,
                           images: [...prev.images, ...Array.from(files)],
                         }));
@@ -413,26 +431,50 @@ const SellerPage = () => {
                     </div>
                   </div>
                   {
-                    !!formData?.images.length &&
+                    !!infoProduct?.images.length &&
                     <div className="grid grid-cols-2 gap-4 mb-4">
-                      {formData.images.map((image, index) => (
-                        <div key={index} className="relative">
-                          <Image
-                            src={URL.createObjectURL(image)}
-                            alt={`Product Image ${index + 1}`}
-                            className="w-full h-auto rounded-lg"
-                            width={200}
-                            height={200}
-                          />
-                          {/* <button
-                          type="button"
-                          onClick={() => handleImageRemove(image)}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
-                        >
-                          &times;
-                        </button> */}
-                        </div>
-                      ))}
+
+                      {infoProduct.images.map((image, index) => {
+                        // if( image.){
+                        //dragable change position array
+
+                        return (
+                          <div
+                            key={index}
+                            className="relative"
+                            draggable
+                            onDragStart={() => setDraggedIndex(index)}
+                            onDragOver={(e: DragEvent<HTMLDivElement>) => e.preventDefault()}
+                            onDrop={() => handleDrop(index)}
+                          >
+                            {
+                              index === 0 &&
+                              <label className="absolute left-2 top-2 p-1 border-1 rounded-md border-slate-400 bg-secondary-dark text-white">
+                                Main Image
+                              </label>
+
+                            }
+                            <Image
+                              src={URL.createObjectURL(image)}
+                              alt={`Product Image ${index + 1}`}
+                              className="w-full h-auto rounded-lg"
+                              width={200}
+                              height={200}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleImageRemove(index)}
+                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full h-5 w-5"
+                            >
+                              <span className=" inline-block -translate-y-[15%]">
+                                &times;
+                              </span>
+                            </button>
+                          </div>
+                        )
+                        // }
+                      }
+                      )}
                     </div>
                   }
                 </div>
@@ -509,4 +551,4 @@ const SellerPage = () => {
   );
 };
 
-export default SellerPage;
+export default UploadProduct;

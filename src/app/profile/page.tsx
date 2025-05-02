@@ -23,6 +23,7 @@ import { useFundWallet } from "@privy-io/react-auth/solana";
 // Type for user data
 interface UserData {
   name: string;
+  addresses: string[];
   email: string;
   avatar: string;
   joined: string;
@@ -84,17 +85,18 @@ const ProfilePage = () => {
   const [activeTab, setActiveTab] = useState("account");
   const [userData, setUserData] = useState<UserData>({
     name: "going",
+    addresses: [],
     email: "going@example.com",
     avatar: "/goingLogo1.png",
     joined: "January 2023",
-    location: "Mexico City, Mexico",
-    bio: "Software developer and tech enthusiast.",
-    website: "https://carlosrodriguez.dev",
-    twitter: "https://twitter.com/carlosrodriguez",
-    x: "https://twitter.com/carlosrodriguez",
-    instagram: "https://instagram.com/carlosrodriguez",
-    telegram: "https://t.me/carlosrodriguez",
-    facebook: "https://facebook.com/carlosrodriguez",
+    location: "",
+    bio: "",
+    website: "",
+    twitter: "",
+    x: "",
+    instagram: "",
+    telegram: "",
+    facebook: "",
   });
 
   const { login } = useLogin()
@@ -128,11 +130,8 @@ const ProfilePage = () => {
     if (ready && authenticated) {
       (async () => {
         try {
-          console.log(user?.id.length)
-
           const res = await fetch(`/api/users?_id=${user?.id.split("did:privy:")[1]}`)
           const resUserData = await res.json();
-          console.log(res.ok)
           if (res.ok) {
             setUserData((prev) => ({
               ...prev,
@@ -142,9 +141,9 @@ const ProfilePage = () => {
           }
 
           // Fetch user data or perform any necessary actions
-          console.log("Creando usuario");
           const defaultUserData = {
             name: "unknown",
+            addresses: [],
             email: "",
             avatar: "",
             joined: "",
@@ -165,8 +164,10 @@ const ProfilePage = () => {
               "Content-Type": "application/json"
             },
             body: JSON.stringify({
-              _id: user?.id.split("did:privy:")[1]
-
+              _id: user?.id.split("did:privy:")[1],
+              // addresses: user?.linkedAccounts?.filter((account) => account.type === "wallet").map((account) => account.address),
+              name: user?.google?.name,
+              email: user?.google?.email,
             })
           })
             .then((response) => {
@@ -177,7 +178,6 @@ const ProfilePage = () => {
             })
             .then((data) => {
               // Handle the user data
-              console.log("User data:", data);
             })
             .catch((error) => {
               console.error("Error fetching user data:", error);
@@ -190,6 +190,7 @@ const ProfilePage = () => {
     }
   }, [ready, authenticated]);
 
+
   const handlerLogin = async () => {
     try {
       await login();
@@ -197,6 +198,8 @@ const ProfilePage = () => {
       console.error("Login failed:", error);
     }
   }
+
+
 
   return (
 
@@ -280,7 +283,7 @@ const ProfilePage = () => {
 
 // Components for each tab
 const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData: Dispatch<SetStateAction<UserData>> }) => {
-  const { ready, authenticated } = usePrivy();
+  const { ready, authenticated, user, linkGoogle } = usePrivy();
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Personal Information</h2>
@@ -410,6 +413,22 @@ const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData
           </div>
 
         </div>
+
+        {/* button login google */}
+        {
+          !user?.google &&
+          <div className="flex justify-center">
+            <button
+              type="button"
+              className="px-6 py-2 bg-white text-black rounded-lg font-medium transition-colors flex items-center space-x-2"
+              onClick={linkGoogle}
+            >
+              <span>Sign in with Google</span>
+            </button>
+          </div>
+        }
+
+
 
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Social Media Links</h3>
@@ -807,7 +826,7 @@ const SettingsTab = () => {
             >
               <option value="USD">USD - United States Dollar</option>
               <option value="EUR">EUR - Euro</option>
-              <option value="MXN">MXN - Mexican Peso</option>
+              <option value="ARS">ARS - Argentinian Peso</option>
               <option value="SOL">SOL - Solana</option>
             </select>
           </div>
@@ -880,7 +899,7 @@ const SellingTab = () => {
 
       <div className="flex justify-end mb-4">
         <Link
-          href="/sell"
+          href="/uploadProduct"
           className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors"
         >
           + Add New Product

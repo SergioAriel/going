@@ -1,54 +1,19 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import {
   ChevronLeftIcon,
-  CreditCardIcon,
+  // CreditCardIcon,
   WalletIcon,
   ShieldCheckIcon
 } from "@heroicons/react/24/outline";
-import { useCustomWallet } from "@/context/WalletContext";
-import { usePayment } from "@/context/PaymentContext";
-import { ConnectionProvider, WalletProvider } from "@solana/wallet-adapter-react";
-import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from "@solana/web3.js";
-import { CloverWalletAdapter, Coin98WalletAdapter, LedgerWalletAdapter, PhantomWalletAdapter, SolflareWalletAdapter, TorusWalletAdapter } from "@solana/wallet-adapter-wallets";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-
-// Interfaces for database data
-interface Product {
-  id: number;
-  name: string;
-  description: string;
-  price: number;
-  image: string;
-  category: string;
-  rating: number;
-  reviews: number;
-  slug: string;
-  stock: number;
-  sellerId: number;
-  acceptedCryptos?: string[];
-  acceptSolana?: boolean;
-  acceptCredit?: boolean;
-  acceptGooglePay?: boolean;
-  acceptApplePay?: boolean;
-}
-
-interface Seller {
-  id: number;
-  name: string;
-  wallet: string;
-}
-
-interface DbData {
-  products: Product[];
-  sellers: Seller[];
-}
+import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
+import { usePrivy } from "@privy-io/react-auth";
 
 interface AddressForm {
   fullName: string;
@@ -60,24 +25,27 @@ interface AddressForm {
   phone: string;
 }
 
+interface Order {
+  orderId: string;
+  paymentId: string;
+  items: any[];
+  total: number;
+  address: AddressForm;
+  seller: {
+    id: string;
+    name: string;
+    wallet: string;
+  } | null;
+
+}
+
 const CheckoutPage = () => {
   const router = useRouter();
+  const { user } = usePrivy();
   const { items, getTotalItems, getTotalPrice, clearCart } = useCart();
-  const { connected, publicKey, connect, disconnect, sendTransaction } = useCustomWallet();
-  const {
-    isGooglePayAvailable,
-    isApplePayAvailable,
-    processGooglePayment,
-    processApplePayment,
-    isProcessing
-  } = usePayment();
+  const { wallets } = useSolanaWallets();
+  const { sendTransaction } = useSendTransaction();
   const [step, setStep] = useState(1);
-  const paymentMethods = [
-    { id: "solana", name: "Solana Wallet", icon: "SOL" },
-    { id: "credit", name: "Credit/Debit Card", icon: "CARD" },
-    { id: "google", name: "Google Pay", icon: "GP" },
-    { id: "apple", name: "Apple Pay", icon: "AP" }
-  ];
   const [selectedPayment, setSelectedPayment] = useState("");
   const [address, setAddress] = useState<AddressForm>({
     fullName: "",
@@ -94,30 +62,14 @@ const CheckoutPage = () => {
 
   // State to track progress within each payment method
   const [paymentStage, setPaymentStage] = useState("initial"); // initial, processing, confirmed
-  const [paymentError, setPaymentError] = useState("");
-  const [transactionId, setTransactionId] = useState("");
+  // const [paymentError, setPaymentError] = useState("");
+  // const [transactionId, setTransactionId] = useState("");
 
   // Example - Calculate costs
   const subtotal = getTotalPrice();
   const shipping = subtotal >= 100 ? 0 : 10;
   const taxes = Math.round(subtotal * 0.16 * 100) / 100; // 16% VAT
   const total = subtotal + shipping + taxes;
-
-  const network = WalletAdapterNetwork.Devnet;
-  const endpoint = useMemo(() => clusterApiUrl(network), [network]);
-
-  // Configure supported wallets
-  const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new CloverWalletAdapter(),
-      new Coin98WalletAdapter(),
-      new TorusWalletAdapter(),
-      new LedgerWalletAdapter()
-    ],
-    []
-  );
 
   // Check if the cart is empty
   useEffect(() => {
@@ -127,17 +79,17 @@ const CheckoutPage = () => {
   }, [getTotalItems, router, orderCompleted]);
 
   // Function to get the current price of Solana using the CoinGecko API
-  const getSolanaPrice = async (): Promise<number> => {
+  const getSolanaPrice = async (currency: string): Promise<number> => {
     try {
-      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
-      
+      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=${currency}`);
+
       if (!response.ok) {
         throw new Error('Failed to fetch Solana price');
       }
-      
+
       const data = await response.json();
-      const solanaPrice = data.solana.usd;
-      
+      const solanaPrice = data.solana[currency];
+
       console.log(`Current Solana price: $${solanaPrice} USD`);
       return solanaPrice;
     } catch (error) {
@@ -167,210 +119,40 @@ const CheckoutPage = () => {
     }
   };
 
-  // Functions to process payments based on the method
-
-  // Solana payment
-  const processSolanaPayment = async () => {
-    setPaymentStage("processing");
-    setPaymentError("");
-
-    try {
-      if (!connected) {
-        await connect();
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        if (!connected || !publicKey) {
-          throw new Error("Failed to connect to wallet");
-        }
-      }
-
-      const amountUSD = getTotalPrice();
-      const solanaPrice = await getSolanaPrice();
-      const amountSOL = amountUSD / solanaPrice;
-      
-      console.log(`Amount to pay: $${amountUSD} USD = ${amountSOL} SOL`);
-      
-      let recipientWallet = "";
-      
-      try {
-        const response = await fetch('/db.json');
-        if (!response.ok) {
-          throw new Error('Failed to load database');
-        }
-        const dbData: DbData = await response.json();
-        
-        if (items.length > 0) {
-          const productId = items[0].id;
-          const product = dbData.products.find(p => p.id === productId);
-          if (product) {
-            const seller = dbData.sellers.find(s => s.id === product.sellerId);
-            if (seller) {
-              recipientWallet = seller.wallet;
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error loading database:", error);
-      }
-
-      if (!recipientWallet) {
-        throw new Error("Failed to find seller's wallet");
-      }
-
-      console.log(`Paying to seller's wallet: ${recipientWallet}`);
-
-      if (!publicKey) {
-        throw new Error("Failed to get wallet's public key");
-      }
-
-      const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
-      
-      const confirmPayment = window.confirm(
-        `Do you confirm the payment of ${amountSOL.toFixed(4)} SOL (approximately $${amountUSD.toFixed(2)} USD) to wallet ${recipientWallet.substring(0, 6)}...${recipientWallet.substring(recipientWallet.length - 4)}?`
-      );
-      
-      if (!confirmPayment) {
-        throw new Error("Payment canceled by user");
-      }
-
-      const transaction = new Transaction();
-      
-      console.log(`Sending ${amountSOL} SOL (${Math.round(amountSOL * LAMPORTS_PER_SOL)} lamports) to ${recipientWallet}`);
-      const instruction = SystemProgram.transfer({
-        fromPubkey: publicKey,
-        toPubkey: new PublicKey(recipientWallet),
-        lamports: Math.round(amountSOL * LAMPORTS_PER_SOL)
-      });
-      
-      transaction.add(instruction);
-      
-      const transactionId = await sendTransaction(transaction, connection);
-
-      if (!transactionId) {
-        throw new Error("Transaction failed");
-      }
-
-      setTransactionId(transactionId);
-      setPaymentStage("confirmed");
-
-      setTimeout(() => {
-        completeCheckout(transactionId);
-      }, 1500);
-
-    } catch (error) {
-      console.error("Error processing Solana payment:", error);
-      setPaymentError("Failed to process Solana payment. Please try again.");
-      setPaymentStage("initial");
-    }
-  };
-
-  // Google Pay payment
-  const handleGooglePayment = async () => {
-    setPaymentStage("processing");
-    setPaymentError("");
-
-    try {
-      const amount = getTotalPrice();
-      const transactionId = await processGooglePayment(amount);
-
-      if (!transactionId) {
-        throw new Error("Transaction failed");
-      }
-
-      setTransactionId(transactionId);
-      setPaymentStage("confirmed");
-
-      setTimeout(() => {
-        completeCheckout(transactionId);
-      }, 1500);
-
-    } catch (error) {
-      console.error("Error processing Google Pay payment:", error);
-      setPaymentError("Failed to process Google Pay payment. Please try again.");
-      setPaymentStage("initial");
-    }
-  };
-
-  // Apple Pay payment
-  const handleApplePayment = async () => {
-    setPaymentStage("processing");
-    setPaymentError("");
-
-    try {
-      const amount = getTotalPrice();
-      const transactionId = await processApplePayment(amount);
-
-      if (!transactionId) {
-        throw new Error("Transaction failed");
-      }
-
-      setTransactionId(transactionId);
-      setPaymentStage("confirmed");
-
-      setTimeout(() => {
-        completeCheckout(transactionId);
-      }, 1500);
-
-    } catch (error) {
-      console.error("Error processing Apple Pay payment:", error);
-      setPaymentError("Failed to process Apple Pay payment. Please try again.");
-      setPaymentStage("initial");
-    }
-  };
-
-  // Credit card payment
-  const processCreditCardPayment = async () => {
-    setPaymentStage("processing");
-    setPaymentError("");
-
-    const cardNumber = (document.getElementById("cardNumber") as HTMLInputElement)?.value;
-    const expiry = (document.getElementById("expiry") as HTMLInputElement)?.value;
-    const cvc = (document.getElementById("cvc") as HTMLInputElement)?.value;
-    const cardName = (document.getElementById("cardName") as HTMLInputElement)?.value;
-
-    if (!cardNumber || !expiry || !cvc || !cardName) {
-      setPaymentError("Please complete all card fields.");
-      setPaymentStage("initial");
-      return;
-    }
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const fakeTransactionId = "CC" + Math.random().toString(36).substring(2, 10).toUpperCase();
-      setTransactionId(fakeTransactionId);
-      setPaymentStage("confirmed");
-
-      setTimeout(() => {
-        completeCheckout(fakeTransactionId);
-      }, 1500);
-
-    } catch (error) {
-      console.error("Error processing card payment:", error);
-      setPaymentError("Failed to process card payment. Please try again.");
-      setPaymentStage("initial");
-    }
-  };
 
   // Function to complete the checkout process
   const completeCheckout = async (paymentId: string) => {
     setLoading(true);
 
     try {
-      const randomOrderId = "ORD-" + Math.floor(Math.random() * 1000000);
+      const orderId = fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          userId: user?.id,
+
+          items: items,
+          address: address,
+          paymentId: paymentId
+        })
+      });
+
+
       setOrderNumber(randomOrderId);
 
       let sellerInfo = null;
-      
+
       try {
         const response = await fetch('/db.json');
         if (!response.ok) {
           throw new Error('Failed to load database');
         }
         const dbData: DbData = await response.json();
-        
+
         if (items.length > 0) {
-          const productId = items[0].id;
+          const productId = items[0]._id;
           const product = dbData.products.find(p => p.id === productId);
           if (product) {
             const seller = dbData.sellers.find(s => s.id === product.sellerId);
@@ -408,31 +190,55 @@ const CheckoutPage = () => {
   };
 
   // Function to handle payment form submission
-  const handleSubmitPayment = (e: React.FormEvent) => {
+  const handleSubmitPayment = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (paymentStage === "processing") return;
-
-    if (paymentStage === "confirmed") {
-      completeCheckout(transactionId);
+    const wallet = wallets.find((wallet) => wallet.address === selectedPayment)
+    console.log(await wallet?.isConnected())
+    if (!wallet) {
+      console.error("Wallet not found");
       return;
     }
 
-    switch (selectedPayment) {
-      case "solana":
-        processSolanaPayment();
-        break;
-      case "credit":
-        processCreditCardPayment();
-        break;
-      case "google":
-        handleGooglePayment();
-        break;
-      case "apple":
-        handleApplePayment();
-        break;
-      default:
-        setPaymentError("Please select a valid payment method.");
+    console.log(items.length)
+    const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+    const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
+    const objectPayments = items.reduce((acc: { [key: string ]: {amount: number, currency: string }}, item) => {
+      const { addressWallet, price, quantity, currency } = item;
+      console.log(addressWallet, price)
+      return {
+        ...acc,
+        [addressWallet]: {
+          amount: acc[addressWallet] ? acc[addressWallet].amount + (price * quantity) : (price * quantity) ,
+          currency,
+        }
+      }
+    }, {});
+    
+    const transaction = new Transaction();
+    Object.entries(objectPayments).forEach(([address, {amount, currency}]) => {
+      // const solanaPrice = await getSolanaPrice(currency);
+      const instruction = SystemProgram.transfer({
+        fromPubkey: new PublicKey(wallet.address),
+        toPubkey: new PublicKey(address),
+        lamports:  1 * LAMPORTS_PER_SOL, // 0.2 SOL
+
+      });
+      transaction.add(instruction);
+
+    })
+    transaction.recentBlockhash = recentBlockhash;
+
+
+    transaction.feePayer = new PublicKey(wallet.address);
+    
+    const transactionReceipt = await sendTransaction({
+      transaction,
+      connection
+    });
+
+    if (transactionReceipt) {
+      completeCheckout(transactionReceipt.signature);
+      return;
     }
   };
 
@@ -477,7 +283,6 @@ const CheckoutPage = () => {
       </div>
     );
   }
-
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
       <div className="container mx-auto px-4">
@@ -679,12 +484,38 @@ const CheckoutPage = () => {
                           Payment methods available for this order
                         </p>
 
-                        <div className="space-y-4">
+                        {
+                          wallets?.map((wallet) => (
+                            <div key={wallet.address} className="flex items-center mb-4">
+                              <input
+                                type="radio"
+                                name="paymentMethod"
+                                value={wallet.address}
+                                checked={selectedPayment === wallet.address}
+                                onChange={() => handlePaymentSelect(wallet.address)}
+                                className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                              />
+                              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center mr-3">
+
+                                <WalletIcon
+                                  width={40}
+                                  height={40}
+                                  className="object-contain"
+                                />
+                              </div>
+                              <span className="font-medium text-gray-900 dark:text-white">
+                                {wallet.address}
+                              </span>
+                            </div>
+                          ))
+                        }
+
+                        {/* <div className="space-y-4">
                           {paymentMethods.map((method) => (
                             <div key={method.id}>
                               <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${selectedPayment === method.id
-                                  ? "border-primary bg-primary-50 dark:bg-primary-900/20"
-                                  : "border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-900/10"
+                                ? "border-primary bg-primary-50 dark:bg-primary-900/20"
+                                : "border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-900/10"
                                 }`}>
                                 <input
                                   type="radio"
@@ -707,10 +538,10 @@ const CheckoutPage = () => {
                               </label>
                             </div>
                           ))}
-                        </div>
+                        </div> */}
                       </div>
 
-                      {selectedPayment === "solana" && (
+                      {/* {selectedPayment === "solana" && (
 
                         <ConnectionProvider endpoint={endpoint}>
                           <WalletProvider wallets={wallets} autoConnect>
@@ -856,9 +687,9 @@ const CheckoutPage = () => {
                             </div>
                           </WalletProvider>
                         </ConnectionProvider>
-                      )}
+                      )} */}
 
-                      {selectedPayment === "credit" && (
+                      {/* {selectedPayment === "credit" && (
                         <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
                             <CreditCardIcon className="h-5 w-5 mr-2" />
@@ -946,164 +777,7 @@ const CheckoutPage = () => {
                             </div>
                           )}
                         </div>
-                      )}
-
-                      {selectedPayment === "google" && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                            <Image
-                              src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Pay_icon.svg/2560px-Google_Pay_icon.svg.png"
-                              alt="Google Pay"
-                              width={20}
-                              height={20}
-                              className="mr-2"
-                            />
-                            Google Pay Payment
-                          </h3>
-
-                          <div className="text-center py-8">
-                            {paymentStage === "initial" && (
-                              <>
-                                <div className="mb-4">
-                                  <Image
-                                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Google_Pay_icon.svg/2560px-Google_Pay_icon.svg.png"
-                                    alt="Google Pay"
-                                    width={80}
-                                    height={80}
-                                    className="mx-auto"
-                                  />
-                                </div>
-                                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                  By clicking the button, you will proceed to the Google Pay payment processor to complete your purchase securely.
-                                </p>
-
-                                <button
-                                  type="button"
-                                  onClick={handleGooglePayment}
-                                  disabled={isProcessing || !isGooglePayAvailable}
-                                  className="inline-flex items-center justify-center px-6 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {isGooglePayAvailable ? 'Pay with Google Pay' : 'Google Pay not available'}
-                                </button>
-
-                                {!isGooglePayAvailable && (
-                                  <p className="mt-3 text-sm text-red-500">
-                                    Google Pay is not available on this device or browser.
-                                  </p>
-                                )}
-                              </>
-                            )}
-
-                            {paymentStage === "processing" && (
-                              <div className="py-6">
-                                <svg className="animate-spin h-10 w-10 text-primary mx-auto mb-4" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <p className="text-gray-700 dark:text-gray-300 font-medium">Processing payment...</p>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">You will be redirected to Google Pay</p>
-                              </div>
-                            )}
-
-                            {paymentStage === "confirmed" && (
-                              <div className="py-6">
-                                <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                                  <svg className="h-6 w-6 text-green-600 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </div>
-                                <p className="text-green-600 dark:text-green-400 font-medium mb-1">Payment confirmed!</p>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm">Transaction ID: {transactionId}</p>
-                              </div>
-                            )}
-
-                            {paymentError && (
-                              <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                                <p className="text-red-600 dark:text-red-400 text-sm">{paymentError}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {selectedPayment === "apple" && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                            <Image
-                              src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/2560px-Apple_Pay_logo.svg.png"
-                              alt="Apple Pay"
-                              width={50}
-                              height={20}
-                              className="mr-2"
-                            />
-                            Apple Pay Payment
-                          </h3>
-
-                          <div className="text-center py-8">
-                            {paymentStage === "initial" && (
-                              <>
-                                <div className="mb-4">
-                                  <Image
-                                    src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/Apple_Pay_logo.svg/2560px-Apple_Pay_logo.svg.png"
-                                    alt="Apple Pay"
-                                    width={100}
-                                    height={40}
-                                    className="mx-auto"
-                                  />
-                                </div>
-                                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                                  By clicking the button, you will proceed to the Apple Pay payment processor to complete your purchase securely.
-                                </p>
-
-                                <button
-                                  type="button"
-                                  onClick={handleApplePayment}
-                                  disabled={isProcessing || !isApplePayAvailable}
-                                  className="inline-flex items-center justify-center px-6 py-3 bg-black hover:bg-gray-900 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {isApplePayAvailable ? 'Pay with Apple Pay' : 'Apple Pay not available'}
-                                </button>
-
-                                {!isApplePayAvailable && (
-                                  <p className="mt-3 text-sm text-red-500">
-                                    Apple Pay is not available on this device or browser.
-                                  </p>
-                                )}
-                              </>
-                            )}
-
-                            {paymentStage === "processing" && (
-                              <div className="py-6">
-                                <svg className="animate-spin h-10 w-10 text-primary mx-auto mb-4" fill="none" viewBox="0 0 24 24">
-                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <p className="text-gray-700 dark:text-gray-300 font-medium">Processing payment...</p>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">You will be redirected to Apple Pay</p>
-                              </div>
-                            )}
-
-                            {paymentStage === "confirmed" && (
-                              <div className="py-6">
-                                <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                                  <svg className="h-6 w-6 text-green-600 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                </div>
-                                <p className="text-green-600 dark:text-green-400 font-medium mb-1">Payment confirmed!</p>
-                                <p className="text-gray-500 dark:text-gray-400 text-sm">Transaction ID: {transactionId}</p>
-                              </div>
-                            )}
-
-                            {paymentError && (
-                              <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                                <p className="text-red-600 dark:text-red-400 text-sm">{paymentError}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
+                      )} */}
                       <div className="flex items-start mt-6">
                         <ShieldCheckIcon className="flex-shrink-0 h-5 w-5 text-green-500 mr-3" />
                         <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -1127,8 +801,8 @@ const CheckoutPage = () => {
 
                       <button
                         onClick={handleSubmitPayment}
-                        disabled={!selectedPayment || loading || paymentStage === "processing"}
-                        className={`inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors ${(!selectedPayment || loading || paymentStage === "processing") ? "opacity-50 cursor-not-allowed" : ""
+                        disabled={loading || paymentStage === "processing"}
+                        className={`inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors ${(loading || paymentStage === "processing") ? "opacity-50 cursor-not-allowed" : ""
                           }`}
                       >
                         {loading ? (
@@ -1164,7 +838,7 @@ const CheckoutPage = () => {
                   <div className="mb-6">
                     <div className="max-h-64 overflow-y-auto">
                       {items.map((item) => (
-                        <div key={item.id} className="flex items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
+                        <div key={item._id} className="flex items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
                           <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
                             <Image
                               src={item.image}

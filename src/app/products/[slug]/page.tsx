@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { StarIcon, ShoppingCartIcon, HeartIcon, CreditCardIcon } from "@heroicons/react/24/outline";
@@ -9,7 +9,7 @@ import { useCart } from "@/context/CartContext";
 
 // Interfaces for data
 interface Product {
-  id: number;
+  _id: number;
   name: string;
   description: string;
   price: number;
@@ -37,11 +37,11 @@ interface Seller {
 }
 
 interface DbData {
-  products: Product[];
-  sellers: Seller[];
+  product: Product;
+  seller: Seller[];
 }
 
-const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
+const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlist, setIsWishlist] = useState(false);
@@ -52,33 +52,31 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
   const [seller, setSeller] = useState<Seller | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+
+    const resolvedParams = use(params);
+    const slug = resolvedParams.slug;
   
   // Load product from db.json
   useEffect(() => {
     const fetchProductData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/db.json', {
+        const response = await fetch(`/api/products/${slug}`, {
           cache: 'no-store'
         });
         if (!response.ok) {
           throw new Error('Failed to load the database');
         }
-        
         const data: DbData = await response.json();
-        console.log("Data loaded in product detail:", data);
-        
         // Find the product by its slug
-        const foundProduct = data.products.find(p => p.slug === params.slug);
+        const foundProduct  = data.product;
         
         if (!foundProduct) {
           setError("Product not found");
           setIsLoading(false);
           return;
         }
-        
-        console.log("Product found:", foundProduct);
-        
+                
         // If the product has a single image instead of an array of images
         if (foundProduct.image && !foundProduct.images) {
           foundProduct.images = [foundProduct.image];
@@ -91,25 +89,26 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
         
         // Find the seller associated with the product
         if (foundProduct.sellerId) {
-          const foundSeller = data.sellers.find(s => s.id === foundProduct.sellerId);
+          const foundSeller = data.seller.find(s => s.id === foundProduct.sellerId);
           if (foundSeller) {
             setSeller(foundSeller);
-            console.log("Seller found:", foundSeller);
           }
         }
         
         // Get related products if they exist
         if (foundProduct.relatedProducts && foundProduct.relatedProducts.length > 0) {
-          const related = data.products.filter(p => 
-            foundProduct.relatedProducts?.includes(p.id)
-          );
-          setRelatedProducts(related);
+            // const related: Product[] = [];
+          // data.product.filter(p => 
+          //   foundProduct.relatedProducts?.includes(p._id)
+          // );
+          // setRelatedProducts(related);
         } else {
           // If there are no specific related products, show products from the same category
-          const sameCategoryProducts = data.products.filter(p => 
-            p.category === foundProduct.category && p.id !== foundProduct.id
-          ).slice(0, 3);
-          setRelatedProducts(sameCategoryProducts);
+          // const sameCategoryProducts: Seller[] = []
+          // data.products.filter(p => 
+          //   p.category === foundProduct.category && p._id !== foundProduct._id
+          // ).slice(0, 3);
+          // setRelatedProducts(sameCategoryProducts);
         }
         
         setIsLoading(false);
@@ -121,7 +120,7 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
     };
 
     fetchProductData();
-  }, [params.slug]);
+  }, [slug]);
   
   if (isLoading) {
     return (
@@ -152,7 +151,7 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
     
     // Create a product object compatible with the interface expected by addToCart
     const cartProduct = {
-      id: product.id,
+      _id: product._id,
       name: product.name,
       price: product.price,
       image: product.images?.[0] || product.image || "https://via.placeholder.com/400",
@@ -261,13 +260,13 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
                   ))}
                 </div>
                 <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                  {product.rating.toFixed(1)} ({product.reviews} reviews)
+                  {product?.rating?.toFixed(1)} ({product.reviews} reviews)
                 </span>
               </div>
               
               {/* Price */}
               <div className="mb-6">
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">${product.price.toFixed(2)}</span>
+                <span className="text-3xl font-bold text-gray-900 dark:text-white">${Number(product?.price).toFixed(2)}</span>
                 {product.stock <= 5 && (
                   <span className="ml-4 text-sm text-red-600 font-medium">
                     Only {product.stock} left in stock!
@@ -403,7 +402,7 @@ const ProductDetailPage = ({ params }: { params: { slug: string } }) => {
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Related Products</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {relatedProducts.map((product) => (
-                <div key={product.id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                <div key={product._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                   <Link href={`/products/${product.slug}`} className="block">
                     <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
                       <Image

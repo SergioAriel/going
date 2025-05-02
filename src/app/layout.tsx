@@ -5,7 +5,6 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { CartProvider } from "@/context/CartContext";
 import { SolanaWalletProvider } from "@/context/WalletContext";
-import { PaymentProvider } from "@/context/PaymentContext";
 import { PrivyProvider } from "@/providers/privy";
 import { MongoClient } from "mongodb";
 
@@ -75,7 +74,7 @@ export default async function RootLayout({
       >
         <PrivyProvider>
         <SolanaWalletProvider>
-          <PaymentProvider>
+
             <CartProvider>
               <Header />
               <main className="flex-grow">
@@ -83,7 +82,7 @@ export default async function RootLayout({
               </main>
               <Footer />
             </CartProvider>
-          </PaymentProvider>
+
         </SolanaWalletProvider>
       </PrivyProvider>
     </body>

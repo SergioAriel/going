@@ -55,12 +55,12 @@ const CartPage = () => {
               
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {items.map((item) => (
-                  <div key={item.id} className="p-4 md:grid md:grid-cols-6 md:items-center">
+                  <div key={item._id} className="p-4 md:grid md:grid-cols-6 md:items-center">
                     {/* Product info */}
                     <div className="flex items-center md:col-span-3 mb-4 md:mb-0">
                       <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
                         <Image
-                          src={item.image}
+                          src={item.mainImage}
                           alt={item.name}
                           fill
                           className="object-cover"
@@ -68,13 +68,13 @@ const CartPage = () => {
                       </div>
                       <div className="ml-4 flex-1">
                         <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                          <Link href={`/products/${item.slug}`} className="hover:text-primary">
+                          <Link href={`/products/${item._id}`} className="hover:text-primary">
                             {item.name}
                           </Link>
                         </h3>
                         <button
                           type="button"
-                          onClick={() => removeFromCart(item.id)}
+                          onClick={() => removeFromCart(item._id)}
                           className="mt-1 text-sm font-medium text-primary hover:text-primary-dark flex items-center"
                         >
                           <XMarkIcon className="h-4 w-4 mr-1" />
@@ -95,7 +95,7 @@ const CartPage = () => {
                       <div className="inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          onClick={() => updateQuantity(item._id, item.quantity - 1)}
                           className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <MinusIcon className="h-4 w-4" />
@@ -105,7 +105,7 @@ const CartPage = () => {
                         </span>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          onClick={() => updateQuantity(item._id, item.quantity + 1)}
                           className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <PlusIcon className="h-4 w-4" />
@@ -133,7 +133,7 @@ const CartPage = () => {
                 type="button"
                 onClick={() => {
                   if (window.confirm('Are you sure you want to clear your cart?')) {
-                    items.forEach(item => removeFromCart(item.id));
+                    items.forEach(item => removeFromCart(item._id));
                   }
                 }}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
