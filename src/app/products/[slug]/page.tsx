@@ -6,29 +6,7 @@ import Link from "next/link";
 import { StarIcon, ShoppingCartIcon, HeartIcon, CreditCardIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { useCart } from "@/context/CartContext";
-
-// Interfaces for data
-interface Product {
-  _id: number;
-  name: string;
-  description: string;
-  price: number;
-  images?: string[];
-  image?: string;
-  category: string;
-  rating: number;
-  reviews: number;
-  slug: string;
-  stock: number;
-  sellerId: number;
-  acceptSolana?: boolean;
-  acceptCredit?: boolean;
-  acceptGooglePay?: boolean;
-  acceptApplePay?: boolean;
-  acceptedCryptos?: string[];
-  specifications?: Array<{name: string, value: string}>;
-  relatedProducts?: number[];
-}
+import { Product } from "@/interfaces";
 
 interface Seller {
   id: number;
@@ -48,7 +26,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
   const { addToCart } = useCart();
   
   const [product, setProduct] = useState<Product | null>(null);
-  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  // const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [seller, setSeller] = useState<Seller | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,38 +56,18 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
         }
                 
         // If the product has a single image instead of an array of images
-        if (foundProduct.image && !foundProduct.images) {
-          foundProduct.images = [foundProduct.image];
-        } else if (!foundProduct.images && !foundProduct.image) {
-          // If it has no images, assign a default one
+        if (!foundProduct.mainImage) {
           foundProduct.images = ["https://via.placeholder.com/400"];
         }
-        
-        setProduct(foundProduct);
-        
-        // Find the seller associated with the product
-        if (foundProduct.sellerId) {
-          const foundSeller = data.seller.find(s => s.id === foundProduct.sellerId);
+
+        if (foundProduct.seller) {
+          const foundSeller = await (await fetch(`/api/users?_id=${foundProduct.seller}`)).json();
           if (foundSeller) {
             setSeller(foundSeller);
           }
         }
         
-        // Get related products if they exist
-        if (foundProduct.relatedProducts && foundProduct.relatedProducts.length > 0) {
-            // const related: Product[] = [];
-          // data.product.filter(p => 
-          //   foundProduct.relatedProducts?.includes(p._id)
-          // );
-          // setRelatedProducts(related);
-        } else {
-          // If there are no specific related products, show products from the same category
-          // const sameCategoryProducts: Seller[] = []
-          // data.products.filter(p => 
-          //   p.category === foundProduct.category && p._id !== foundProduct._id
-          // ).slice(0, 3);
-          // setRelatedProducts(sameCategoryProducts);
-        }
+        setProduct(foundProduct);
         
         setIsLoading(false);
       } catch (error) {
@@ -118,9 +76,10 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
         setIsLoading(false);
       }
     };
-
     fetchProductData();
   }, [slug]);
+
+  
   
   if (isLoading) {
     return (
@@ -149,21 +108,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
   const handleAddToCart = () => {
     if (!product) return;
     
-    // Create a product object compatible with the interface expected by addToCart
-    const cartProduct = {
-      _id: product._id,
-      name: product.name,
-      price: product.price,
-      image: product.images?.[0] || product.image || "https://via.placeholder.com/400",
-      slug: product.slug,
-      acceptSolana: product.acceptSolana,
-      acceptCredit: product.acceptCredit,
-      acceptGooglePay: product.acceptGooglePay,
-      acceptApplePay: product.acceptApplePay,
-      acceptedCryptos: product.acceptedCryptos
-    };
-    
-    addToCart(cartProduct, quantity);
+    addToCart(product, quantity);
   };
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -279,38 +224,6 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                 {product.description}
               </p>
               
-              {/* Payment methods */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Payment Methods</h3>
-                <div className="flex flex-wrap gap-2">
-                  {product.acceptCredit && (
-                    <span className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-full">
-                      Credit Card
-                    </span>
-                  )}
-                  {product.acceptSolana && (
-                    <span className="px-3 py-1 text-xs bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-300 rounded-full">
-                      Solana
-                    </span>
-                  )}
-                  {product.acceptGooglePay && (
-                    <span className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-full">
-                      Google Pay
-                    </span>
-                  )}
-                  {product.acceptApplePay && (
-                    <span className="px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 rounded-full">
-                      Apple Pay
-                    </span>
-                  )}
-                  {product.acceptedCryptos && product.acceptedCryptos.map(crypto => (
-                    <span key={crypto} className="px-3 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full">
-                      {crypto}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              
               {/* Quantity */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Quantity</h3>
@@ -364,7 +277,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
             </div>
             
             {/* Specifications */}
-            {product.specifications && product.specifications.length > 0 && (
+            {/* {product.specifications && product.specifications.length > 0 && (
               <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Specifications</h2>
                 <div className="space-y-3">
@@ -376,7 +289,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                   ))}
                 </div>
               </div>
-            )}
+            )} */}
           </div>
         </div>
         
@@ -397,7 +310,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
         )}
 
         {/* Related products */}
-        {relatedProducts.length > 0 && (
+        {/* {relatedProducts.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">Related Products</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -440,7 +353,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
               ))}
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

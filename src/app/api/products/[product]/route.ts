@@ -1,8 +1,8 @@
 import client from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 
-export const GET = async (request: NextRequest, { params }: { params: Promise<{ product: string }> }) => {
+export const GET = async (_, { params }: { params: Promise<{ product: string }> }) => {
     const productID = (await params).product;
     try {
         const db = client.db("going");

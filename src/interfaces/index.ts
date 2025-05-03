@@ -1,6 +1,6 @@
 // import { ObjectId } from "mongodb";
 
-import { ObjectId, WithId } from "mongodb";
+import { ObjectId } from "mongodb";
 
 export interface CreateProduct {
   seller: string;
