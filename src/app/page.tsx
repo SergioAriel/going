@@ -10,7 +10,7 @@ import { Product } from "@/interfaces";
 export default async function Home() {
 
     const dbFeaturedProducts = await client.db("going")
-    .collection("products")
+    .collection<Product>("products")
     .find({isFeatured: true})
     .sort({ metacritic: -1 })
     .limit(10)
@@ -40,7 +40,7 @@ export default async function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {
               dbFeaturedProducts?.map((product) => (
-                <ProductCard key={product._id.toString()} product={product as Product} />
+                <ProductCard key={product._id.toString()} product={product} />
               ))
             }
           </div>

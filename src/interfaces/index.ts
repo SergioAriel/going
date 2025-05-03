@@ -1,6 +1,3 @@
-// import { ObjectId } from "mongodb";
-
-import { ObjectId } from "mongodb";
 
 export interface UserData {
   _id: string;
@@ -35,7 +32,7 @@ export interface CreateProduct {
 }
 
 export interface Product {
-  _id: string | ObjectId;
+  _id: string;
   seller: string;
   name: string;
   addressWallet: string;
