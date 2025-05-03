@@ -1,3 +1,4 @@
+import { UserData } from "@/interfaces";
 import client from "@/lib/mongodb";
 import { v2 as cloudinary } from "cloudinary";
 import { ObjectId } from "mongodb";
@@ -9,32 +10,17 @@ cloudinary.config({
     api_secret: process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET,
 });
 
-interface UserData {
-    _id: string;
-    name: string;
-    addresses: Array<string>;
-    email: string;
-    avatar: string;
-    joined: string;
-    location: string;
-    bio: string;
-    website: string;
-    twitter: string;
-    x: string;
-    instagram: string;
-    telegram: string;
-    facebook: string;
-}
+
 
 
 export const GET = async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams
-    const _id= searchParams.get('_id')
+    const _id = searchParams.get('_id')
     const db = client.db("going");
     if (!_id) {
         return NextResponse.json({ error: "User ID is required" }, { status: 400 });
     }
-    const user = await db.collection("users").findOne({ '_id': _id });
+    const user = await db.collection<UserData>("users").findOne({ '_id': _id });
     if (!user) {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
     }

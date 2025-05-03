@@ -1,3 +1,4 @@
+import { UserData } from '@/interfaces';
 import client from '@/lib/mongodb';
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from 'next/server';
@@ -69,7 +70,6 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         isService: data.get("isService") === "true",
         addressWallet: data.get("addressWallet") as string,
         mainImage: Array.isArray(imageUrls) ? imageUrls[0] : ''
-        
     };
 
     if (!file) {
@@ -88,9 +88,9 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     });
 
     //udate user
-
-    await db.collection("users").updateOne(
-        { _id: productDb.userID },
+    
+    await db.collection<UserData>("users").updateOne(
+        { _id: productDb.userID  },
         { $push: { products: product.insertedId }}
     );
     console.log("Product added successfully:", product);

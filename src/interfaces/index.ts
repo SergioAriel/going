@@ -2,6 +2,22 @@
 
 import { ObjectId } from "mongodb";
 
+export interface UserData {
+  _id: string;
+  name: string;
+  addresses: Array<string>;
+  email: string;
+  avatar: string;
+  joined: string;
+  location: string;
+  bio: string;
+  website: string;
+  twitter: string;
+  x: string;
+  instagram: string;
+  telegram: string;
+  facebook: string;
+}
 export interface CreateProduct {
   seller: string;
   stock?: number;
