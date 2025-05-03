@@ -58,7 +58,7 @@ export const GET = async (request: NextRequest) => {
     return NextResponse.json(userData, { status: 200 });
 }
 
-export const POST = async (request: Request) => {
+export const POST = async (request: NextRequest) => {
     const user = await request.json();
 
     const resultUpload = new Promise(async (resolve) => {

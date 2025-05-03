@@ -14,6 +14,7 @@ import {
 import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
+import { useAlert } from "@/context/alert";
 
 interface AddressForm {
   fullName: string;
@@ -25,25 +26,11 @@ interface AddressForm {
   phone: string;
 }
 
-interface Order {
-  orderId: string;
-  paymentId: string;
-  items: any[];
-  total: number;
-  address: AddressForm;
-  seller: {
-    id: string;
-    name: string;
-    wallet: string;
-  } | null;
-
-}
-
 const CheckoutPage = () => {
   const router = useRouter();
   const { user } = usePrivy();
   const { items, getTotalItems, getTotalPrice, clearCart } = useCart();
-  const { wallets } = useSolanaWallets();
+  const { wallets, ready } = useSolanaWallets();
   const { sendTransaction } = useSendTransaction();
   const [step, setStep] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState("");
@@ -56,13 +43,16 @@ const CheckoutPage = () => {
     country: "",
     phone: ""
   });
+
   const [loading, setLoading] = useState(false);
+  const { handleAlert } = useAlert()
+
   const [orderCompleted, setOrderCompleted] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
 
   // State to track progress within each payment method
   const [paymentStage, setPaymentStage] = useState("initial"); // initial, processing, confirmed
-  // const [paymentError, setPaymentError] = useState("");
+  const [paymentError, setPaymentError] = useState(false);
   // const [transactionId, setTransactionId] = useState("");
 
   // Example - Calculate costs
@@ -88,9 +78,9 @@ const CheckoutPage = () => {
       }
 
       const data = await response.json();
-      const solanaPrice = data.solana[currency];
+      const solanaPrice = data.solana[currency.toLowerCase()];
 
-      console.log(`Current Solana price: $${solanaPrice} USD`);
+      console.log(`Current Solana price: $${solanaPrice} ${currency}`);
       return solanaPrice;
     } catch (error) {
       console.error("Error fetching Solana price:", error);
@@ -121,126 +111,132 @@ const CheckoutPage = () => {
 
 
   // Function to complete the checkout process
-  const completeCheckout = async (paymentId: string) => {
+  const completeCheckout = async (signature: string, sellers: { [seller: string]: { address: string, totalAmount: number, currency: string, itemId: string, price: number } }) => {
     setLoading(true);
-
+    setPaymentStage("confirmed")
     try {
-      const orderId = fetch("/api/orders", {
+      const createOrder = await fetch("/api/orders", {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          userId: user?.id,
-
-          items: items,
-          address: address,
-          paymentId: paymentId
+          buyer: user?.id,
+          sellers,
+          signature,
         })
       });
 
+      const { orderID } = await createOrder.json()
 
-      setOrderNumber(randomOrderId);
-
-      let sellerInfo = null;
-
-      try {
-        const response = await fetch('/db.json');
-        if (!response.ok) {
-          throw new Error('Failed to load database');
-        }
-        const dbData: DbData = await response.json();
-
-        if (items.length > 0) {
-          const productId = items[0]._id;
-          const product = dbData.products.find(p => p.id === productId);
-          if (product) {
-            const seller = dbData.sellers.find(s => s.id === product.sellerId);
-            if (seller) {
-              sellerInfo = {
-                id: seller.id,
-                name: seller.name,
-                wallet: seller.wallet
-              };
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error loading database:", error);
-      }
-
-      console.log("Purchase completed:", {
-        orderId: randomOrderId,
-        paymentId: paymentId,
-        items: items,
-        total: total,
-        address: address,
-        seller: sellerInfo
-      });
+      setOrderNumber(orderID);
 
       clearCart();
       setOrderCompleted(true);
       setStep(3);
+
+
+
     } catch (error) {
       console.error("Error completing purchase:", error);
-      setPaymentError("There was an error completing your purchase. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  console.log(orderCompleted)
+
   // Function to handle payment form submission
   const handleSubmitPayment = async (e: React.FormEvent) => {
+    setLoading(true)
     e.preventDefault();
-    const wallet = wallets.find((wallet) => wallet.address === selectedPayment)
-    console.log(await wallet?.isConnected())
-    if (!wallet) {
-      console.error("Wallet not found");
-      return;
+
+    if (!selectedPayment) {
+      handleAlert({
+        message: "Wallet not selected",
+        isError: true
+      })
+      setPaymentError(true)
+      return
     }
 
-    console.log(items.length)
+    const wallet = wallets.find((wallet) => wallet.address === selectedPayment)
+    if (!wallet) {
+      handleAlert({
+        message: "Wallet not found",
+        isError: true
+      })
+      setPaymentError(true)
+      return;
+    }
     const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
     const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
-    const objectPayments = items.reduce((acc: { [key: string ]: {amount: number, currency: string }}, item) => {
-      const { addressWallet, price, quantity, currency } = item;
-      console.log(addressWallet, price)
+    const objectPayments = items.reduce((acc: { [_: string]: { address: string, totalAmount: number, currency: string, itemId: string, price: number } }, item) => {
+      const { addressWallet, price, quantity, currency, seller, _id } = item;
       return {
         ...acc,
-        [addressWallet]: {
-          amount: acc[addressWallet] ? acc[addressWallet].amount + (price * quantity) : (price * quantity) ,
+        [seller]: {
+          itemId: _id,
+          address: addressWallet,
+          price,
+          totalAmount: acc[addressWallet] ? acc[addressWallet].totalAmount + (price * quantity) : (price * quantity),
           currency,
         }
       }
     }, {});
-    
+
     const transaction = new Transaction();
-    Object.entries(objectPayments).forEach(([address, {amount, currency}]) => {
-      // const solanaPrice = await getSolanaPrice(currency);
-      const instruction = SystemProgram.transfer({
-        fromPubkey: new PublicKey(wallet.address),
-        toPubkey: new PublicKey(address),
-        lamports:  1 * LAMPORTS_PER_SOL, // 0.2 SOL
+    const transferInstructions = await Promise.all(
+      Object.entries(objectPayments).map(async ([_, { address, totalAmount, currency }]) => {
+        const solanaPrice = await getSolanaPrice(currency);
+        return SystemProgram.transfer({
+          fromPubkey: new PublicKey(wallet.address),
+          toPubkey: new PublicKey(address),
+          lamports: Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
+        });
+      })
+    );
 
-      });
+    transferInstructions.forEach(instruction => {
       transaction.add(instruction);
-
-    })
+    });
     transaction.recentBlockhash = recentBlockhash;
 
 
     transaction.feePayer = new PublicKey(wallet.address);
-    
-    const transactionReceipt = await sendTransaction({
-      transaction,
-      connection
-    });
 
-    if (transactionReceipt) {
-      completeCheckout(transactionReceipt.signature);
-      return;
+    try {
+
+      const transactionReceipt = await sendTransaction({
+        transaction,
+        connection
+      });
+      setPaymentStage("confirmed");
+      if (transactionReceipt) {
+        completeCheckout(transactionReceipt.signature, objectPayments);
+        return;
+      }
+    } catch (_) {
+      handleAlert({
+        message: "There was an error completing your purchase. Please try again.",
+        isError: true
+      })
+      setPaymentError(true);
     }
   };
+
+  useEffect(() => {
+    if (paymentError) {
+      setLoading(false)
+      setPaymentStage("initial")
+      setTimeout(() => {
+        setPaymentError(false)
+      }, 1000)
+    }
+  }, [loading, paymentError, paymentStage])
+
+
+console.log(user?.linkedAccounts, ready)
 
   if (orderCompleted) {
     return (
@@ -256,7 +252,7 @@ const CheckoutPage = () => {
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Order Completed!</h1>
 
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Thank you for your purchase. Your order #{orderNumber} has been successfully processed.
+              Thank you for your purchase. Your order {orderNumber} has been successfully processed.
             </p>
 
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
@@ -481,303 +477,45 @@ const CheckoutPage = () => {
                     <div className="space-y-6">
                       <div>
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                          Payment methods available for this order
+                          Wallets available for this order
                         </p>
 
                         {
-                          wallets?.map((wallet) => (
-                            <div key={wallet.address} className="flex items-center mb-4">
-                              <input
-                                type="radio"
-                                name="paymentMethod"
-                                value={wallet.address}
-                                checked={selectedPayment === wallet.address}
-                                onChange={() => handlePaymentSelect(wallet.address)}
-                                className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                              />
-                              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center mr-3">
+                          wallets
+                          // user?.linkedAccounts?
+                          .map((wallet) => {
+                            
+                            // if (wallet.type === "wallet") {
+                              return (
 
-                                <WalletIcon
-                                  width={40}
-                                  height={40}
-                                  className="object-contain"
-                                />
-                              </div>
-                              <span className="font-medium text-gray-900 dark:text-white">
-                                {wallet.address}
-                              </span>
-                            </div>
-                          ))
+                                <div key={wallet.address} className="flex items-center mb-4">
+                                  <input
+                                    type="radio"
+                                    name="paymentMethod"
+                                    id={wallet.address}
+
+                                    value={wallet.address}
+                                    checked={selectedPayment === wallet.address}
+                                    onChange={() => handlePaymentSelect(wallet.address)}
+                                    className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
+                                  />
+                                  <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center mr-3">
+
+                                    <WalletIcon
+                                      width={40}
+                                      height={40}
+                                      className="object-contain"
+                                    />
+                                  </div>
+                                  <label htmlFor={wallet.address} className="font-medium text-gray-900 dark:text-white">
+                                    {wallet.address}
+                                  </label>
+                                </div>
+                              )
+                            // }
+                          })
                         }
-
-                        {/* <div className="space-y-4">
-                          {paymentMethods.map((method) => (
-                            <div key={method.id}>
-                              <label className={`flex items-center p-4 border rounded-lg cursor-pointer transition-colors ${selectedPayment === method.id
-                                ? "border-primary bg-primary-50 dark:bg-primary-900/20"
-                                : "border-gray-200 dark:border-gray-700 hover:border-primary hover:bg-primary-50 dark:hover:bg-primary-900/10"
-                                }`}>
-                                <input
-                                  type="radio"
-                                  name="paymentMethod"
-                                  value={method.id}
-                                  checked={selectedPayment === method.id}
-                                  onChange={() => handlePaymentSelect(method.id)}
-                                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
-                                />
-                                <div className="ml-3">
-                                  <div className="flex items-center">
-                                    <div className="h-10 w-16 bg-gray-100 dark:bg-gray-700 rounded-md flex items-center justify-center font-medium text-gray-800 dark:text-gray-200 mr-3">
-                                      {method.icon}
-                                    </div>
-                                    <span className={`font-medium text-gray-900 dark:text-white`}>
-                                      {method.name}
-                                    </span>
-                                  </div>
-                                </div>
-                              </label>
-                            </div>
-                          ))}
-                        </div> */}
                       </div>
-
-                      {/* {selectedPayment === "solana" && (
-
-                        <ConnectionProvider endpoint={endpoint}>
-                          <WalletProvider wallets={wallets} autoConnect>
-                            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                                <WalletIcon className="h-5 w-5 mr-2" />
-                                Solana Payment
-                              </h3>
-
-                              <div className="mb-6">
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  {items.length > 0 && items[0].acceptedCryptos && Array.isArray(items[0].acceptedCryptos) && (
-                                    <>
-                                      {items[0].acceptedCryptos.includes("SOL") && (
-                                        <div className="flex items-center p-2 bg-primary/10 dark:bg-primary-900/20 border border-primary rounded-lg">
-                                          <div className="w-6 h-6 mr-2 relative">
-                                            <Image
-                                              src="https://cryptologos.cc/logos/solana-sol-logo.svg?v=024"
-                                              alt="Solana"
-                                              width={24}
-                                              height={24}
-                                              className="object-contain"
-                                            />
-                                          </div>
-                                          <span className="font-medium text-sm">SOL</span>
-                                        </div>
-                                      )}
-                                      {items[0].acceptedCryptos.includes("USDC") && (
-                                        <div className="flex items-center p-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg">
-                                          <div className="w-6 h-6 mr-2 relative">
-                                            <Image
-                                              src="https://cryptologos.cc/logos/usd-coin-usdc-logo.svg?v=024"
-                                              alt="USDC"
-                                              width={24}
-                                              height={24}
-                                              className="object-contain"
-                                            />
-                                          </div>
-                                          <span className="font-medium text-sm">USDC</span>
-                                        </div>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-
-                                <div className="rounded-lg bg-gray-50 dark:bg-gray-700 p-4 mb-4">
-                                  <div className="flex justify-between items-center mb-2">
-                                    <span className="text-gray-700 dark:text-gray-300 text-sm">Total Price:</span>
-                                    <span className="font-medium">{total.toFixed(2)} USD</span>
-                                  </div>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-gray-700 dark:text-gray-300 text-sm">Equivalent in SOL:</span>
-                                    <span className="font-medium">~{(total / 140).toFixed(4)} SOL</span>
-                                  </div>
-                                </div>
-
-                                {paymentStage === "initial" && (
-                                  <>
-                                    <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                                      To complete your payment with Solana, follow these steps:
-                                    </p>
-
-                                    <ol className="list-decimal list-inside space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                                      <li>Connect your Solana wallet</li>
-                                      <li>Review the amount to transfer</li>
-                                      <li>Confirm the transaction in your wallet</li>
-                                    </ol>
-
-                                    <div className="flex flex-col space-y-4">
-                                      {!connected && (
-
-                                        <WalletMultiButton
-                                          className="!w-full !bg-primary !hover:bg-primary-dark !text-white !py-3 !px-4 !rounded-lg !font-medium !transition-colors !flex !items-center !justify-center"
-                                        />
-
-                                      )}
-
-                                      {connected && (
-                                        <>
-                                          <div className="flex items-center justify-between bg-gray-100 dark:bg-gray-700 p-3 rounded-lg mb-4">
-                                            <div className="flex items-center">
-                                              <div className="w-8 h-8 bg-primary/10 dark:bg-primary-900/20 rounded-full flex items-center justify-center mr-3">
-                                                <WalletIcon className="h-4 w-4 text-primary dark:text-primary-300" />
-                                              </div>
-                                              <div>
-                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
-                                                  {publicKey?.toString()?.substring(0, 4)}...{publicKey?.toString()?.substring(publicKey?.toString().length - 4)}
-                                                </p>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400">Wallet connected</p>
-                                              </div>
-                                            </div>
-                                            <button
-                                              onClick={disconnect}
-                                              className="text-sm text-red-600 dark:text-red-400 hover:underline"
-                                            >
-                                              Disconnect
-                                            </button>
-                                          </div>
-
-                                          <button
-                                            type="button"
-                                            onClick={processSolanaPayment}
-                                            className="w-full bg-primary hover:bg-primary-dark text-white py-3 px-4 rounded-lg font-medium transition-colors"
-                                          >
-                                            Pay with Solana
-                                          </button>
-                                        </>
-                                      )}
-                                    </div>
-                                  </>
-                                )}
-
-                                {paymentStage === "processing" && (
-                                  <div className="text-center py-6">
-                                    <svg className="animate-spin h-10 w-10 text-primary mx-auto mb-4" fill="none" viewBox="0 0 24 24">
-                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <p className="text-gray-700 dark:text-gray-300 font-medium">Processing payment...</p>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Please do not close this window</p>
-                                  </div>
-                                )}
-
-                                {paymentStage === "confirmed" && (
-                                  <div className="text-center py-6">
-                                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                                      <svg className="h-6 w-6 text-green-600 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    </div>
-                                    <p className="text-green-600 dark:text-green-400 font-medium mb-1">Payment confirmed!</p>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm">Transaction ID: {transactionId}</p>
-                                    <p className="text-gray-500 dark:text-gray-400 text-sm mt-4">Processing your order...</p>
-                                  </div>
-                                )}
-
-                                {paymentError && (
-                                  <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                                    <p className="text-red-600 dark:text-red-400 text-sm">{paymentError}</p>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </WalletProvider>
-                        </ConnectionProvider>
-                      )} */}
-
-                      {/* {selectedPayment === "credit" && (
-                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4 flex items-center">
-                            <CreditCardIcon className="h-5 w-5 mr-2" />
-                            Card Details
-                          </h3>
-
-                          {paymentStage === "initial" && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="md:col-span-2">
-                                <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  Card Number
-                                </label>
-                                <input
-                                  id="cardNumber"
-                                  type="text"
-                                  placeholder="1234 5678 9012 3456"
-                                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                                />
-                              </div>
-
-                              <div>
-                                <label htmlFor="expiry" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  Expiration Date
-                                </label>
-                                <input
-                                  id="expiry"
-                                  type="text"
-                                  placeholder="MM/YY"
-                                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                                />
-                              </div>
-
-                              <div>
-                                <label htmlFor="cvc" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  CVC
-                                </label>
-                                <input
-                                  id="cvc"
-                                  type="text"
-                                  placeholder="123"
-                                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                                />
-                              </div>
-
-                              <div className="md:col-span-2">
-                                <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                  Name on Card
-                                </label>
-                                <input
-                                  id="cardName"
-                                  type="text"
-                                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {paymentStage === "processing" && (
-                            <div className="text-center py-6">
-                              <svg className="animate-spin h-10 w-10 text-primary mx-auto mb-4" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              <p className="text-gray-700 dark:text-gray-300 font-medium">Processing payment...</p>
-                              <p className="text-gray-500 dark:text-gray-400 text-sm mt-2">Verifying card information</p>
-                            </div>
-                          )}
-
-                          {paymentStage === "confirmed" && (
-                            <div className="text-center py-6">
-                              <div className="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <svg className="h-6 w-6 text-green-600 dark:text-green-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                </svg>
-                              </div>
-                              <p className="text-green-600 dark:text-green-400 font-medium mb-1">Payment confirmed!</p>
-                              <p className="text-gray-500 dark:text-gray-400 text-sm">Transaction ID: {transactionId}</p>
-                              <p className="text-gray-500 dark:text-gray-400 text-sm mt-4">Processing your order...</p>
-                            </div>
-                          )}
-
-                          {paymentError && (
-                            <div className="mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                              <p className="text-red-600 dark:text-red-400 text-sm">{paymentError}</p>
-                            </div>
-                          )}
-                        </div>
-                      )} */}
                       <div className="flex items-start mt-6">
                         <ShieldCheckIcon className="flex-shrink-0 h-5 w-5 text-green-500 mr-3" />
                         <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -801,23 +539,26 @@ const CheckoutPage = () => {
 
                       <button
                         onClick={handleSubmitPayment}
-                        disabled={loading || paymentStage === "processing"}
-                        className={`inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors ${(loading || paymentStage === "processing") ? "opacity-50 cursor-not-allowed" : ""
-                          }`}
+                        disabled={loading || paymentError || paymentStage !== "initial"}
+                        className={`inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-colors   ${(loading || paymentStage !== "initial") ? "opacity-50 cursor-not-allowed" : ""} ${paymentError && "error-animation cursor-not-allowed"}`}
                       >
-                        {loading ? (
-                          <>
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing...
-                          </>
-                        ) : paymentStage === "confirmed" ? (
-                          "Complete Purchase"
-                        ) : (
-                          "Proceed to Payment"
-                        )}
+                        {
+                          paymentError ?
+                            "Payment error"
+                            :
+                            loading ? (
+                              <>
+                                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Processing...
+                              </>
+                            ) : paymentStage === "confirmed" ? (
+                              "Complete Purchase"
+                            ) : (
+                              "Proceed to Payment"
+                            )}
                       </button>
                     </div>
                   </div>
@@ -841,7 +582,7 @@ const CheckoutPage = () => {
                         <div key={item._id} className="flex items-center py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
                           <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
                             <Image
-                              src={item.image}
+                              src={item.mainImage}
                               alt={item.name}
                               fill
                               className="object-cover"

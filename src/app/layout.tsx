@@ -4,9 +4,9 @@ import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { CartProvider } from "@/context/CartContext";
-import { SolanaWalletProvider } from "@/context/WalletContext";
 import { PrivyProvider } from "@/providers/privy";
 import { MongoClient } from "mongodb";
+import { AlertProvider } from "@/context/alert";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -57,14 +57,12 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
 
-  let isConnected = false;
 
   try {
     const client = await connectToDatabase();
-    isConnected = !!client.db(process.env.MONGODB_DB); // Intenta acceder a la base de datos
+    client.db(process.env.MONGODB_DB); // Intenta acceder a la base de datos
   } catch (e) {
     console.error("Error al conectar a la base de datos:", e);
-    isConnected = false;
   }
 
   return (
@@ -73,19 +71,17 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <PrivyProvider>
-        <SolanaWalletProvider>
-
-            <CartProvider>
-              <Header />
-              <main className="flex-grow">
-                {children}
-              </main>
-              <Footer />
-            </CartProvider>
-
-        </SolanaWalletProvider>
-      </PrivyProvider>
-    </body>
+            <AlertProvider>
+              <CartProvider>
+                <Header />
+                <main className="flex-grow">
+                  {children}
+                </main>
+                <Footer />
+              </CartProvider>
+            </AlertProvider>
+        </PrivyProvider>
+      </body>
     </html >
   );
 }

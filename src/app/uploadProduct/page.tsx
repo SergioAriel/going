@@ -17,7 +17,7 @@ import { CreateProduct } from "@/interfaces";
 const UploadProduct = () => {
   const { user } = usePrivy();
   const [infoProduct, setInfoProduct] = useState<CreateProduct>({
-    userID: user?.id.split('did:privy:')[1] || "",
+    seller: user?.id.split('did:privy:')[1] || "",
     name: "",
     description: "",
     category: "",

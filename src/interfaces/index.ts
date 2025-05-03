@@ -1,7 +1,9 @@
 // import { ObjectId } from "mongodb";
 
+import { ObjectId, WithId } from "mongodb";
+
 export interface CreateProduct {
-  userID: string;
+  seller: string;
   stock?: number;
   location?: string;
   condition?: string;
@@ -17,8 +19,8 @@ export interface CreateProduct {
 }
 
 export interface Product {
-  _id: string;
-  userID: string;
+  _id: string | ObjectId;
+  seller: string;
   name: string;
   addressWallet: string;
   description: string;
@@ -44,6 +46,7 @@ export interface Product {
 
 export interface CartItem {
   _id: string;
+  seller: string;
   name: string;
   price: number;
   mainImage: string;

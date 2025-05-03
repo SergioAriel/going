@@ -2,27 +2,19 @@
 
 import ProductCard from "@/components/products/ProductCard";
 import HeroSlider from "@/components/layout/HeroSlider";
-// import { getProducts, Product } from "@/lib/api";
 import Link from "next/link";
 import client from "@/lib/mongodb";
-// import { useEffect, useState } from "react";
+import { Product } from "@/interfaces";
 
 
 export default async function Home() {
-  // const products = await getProducts();
-  // const [products, setProducts] = useState([]);
-  // const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
 
-
-  // Load products from db.json
-  // useEffect(() => {
-  //   (async () => {
-  //     const products = await getProducts();
-  //     // const featuredProducts = products.slice(0, 8);
-  //     // setFeaturedProducts(featuredProducts);
-  //     console.log("Featured Products:", products);
-  //   })();
-  // }, []);
+    const dbFeaturedProducts = await client.db("going")
+    .collection("products")
+    .find({isFeatured: true})
+    .sort({ metacritic: -1 })
+    .limit(10)
+    .toArray(); 
 
 
   return (
@@ -47,9 +39,9 @@ export default async function Home() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {
-            // featuredProducts.map((product) => (
-            //   <ProductCard key={product.id} product={product} />
-            // ))
+              dbFeaturedProducts?.map((product) => (
+                <ProductCard key={product._id.toString()} product={product as Product} />
+              ))
             }
           </div>
         </div>

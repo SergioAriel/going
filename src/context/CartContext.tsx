@@ -33,6 +33,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       } else {
         return [...prevItems, {
           _id: product._id,
+          seller: product.seller,
           name: product.name,
           price: product.price,
           priceOffer: product.isOffer && product.offerPercentage ? product.price - (product.price * product.offerPercentage) : false,

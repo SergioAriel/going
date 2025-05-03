@@ -69,6 +69,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         isService: data.get("isService") === "true",
         addressWallet: data.get("addressWallet") as string,
         mainImage: Array.isArray(imageUrls) ? imageUrls[0] : ''
+        
     };
 
     if (!file) {

@@ -210,3 +210,53 @@ body {
   -webkit-background-clip: text;
   color: transparent;
 }
+
+/* En tu archivo CSS global o module.css */
+
+@keyframes sweep-red {
+  0% {
+    /* Al inicio, el gradiente está posicionado de manera que solo se vea el rojo claro */
+    /* Usamos un gradiente que va de rojo oscuro (0%) a rojo claro (50%), y luego sólido rojo claro (hasta 100%) */
+    /* Esto permite que el rojo oscuro "entre" desde la izquierda */
+     background-position-x: 100%; /* Posiciona el 50% del gradiente (la transición) al 100% del botón */
+  }
+  100% {
+     /* Al final, el gradiente está posicionado de manera que se vea completamente el rojo oscuro */
+     background-position-x: 0%; /* Posiciona el 50% del gradiente (la transición) al 0% del botón */
+  }
+}
+
+.error-animation {
+  /* Define el gradiente: empieza oscuro, transiciona a claro */
+  /* La transición sharp del 50% al 50% crea una línea divisoria clara */
+  background: linear-gradient(to right, #b91c1c 50%, #f87171 50%);
+  /* El fondo es el doble de ancho para poder animar la posición de la línea divisoria */
+  background-size: 200% 100%;
+  /* Aplica la animación */
+  /* sweep-red: nombre de la animación */
+  /* 1s: duración de la animación (el barrido dura 1 segundo) */
+  /* linear: velocidad constante */
+  /* forwards: la animación se queda en el estado final (100%) */
+  animation: sweep-red 1s linear forwards;
+  color: white; /* Color del texto sobre el fondo rojo */
+  background-repeat: no-repeat;
+  /* Estado inicial del background-position-x antes de que comience la animación */
+  /* Debe coincidir con el 0% del keyframe para evitar un salto inicial */
+  background-position-x: 100%;
+
+  /* Opcional: Asegurar que la transición de background esté definida
+     Esto puede ayudar a la transición *desde* el estado animado *hacia* los estilos normales */
+  transition: background-position-x 0.5s ease, background 0.5s ease;
+}
+
+/* Estilos base del botón */
+/* Asegúrate de que la transición de background también esté definida aquí para
+   cuando .error-animation se remueve y vuelve a los estilos normales (ej. bg-primary) */
+.inline-flex { /* O la clase base de tu botón */
+   /* ... otros estilos ... */
+   /* Asegura una transición suave de la propiedad background */
+   transition: background 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+   /* Define el color de fondo inicial del botón, que será visible antes/después del error */
+   /* Si quieres que el botón empiece rojo claro ANTES de la animación, puedes definirlo aquí */
+   /* background-color: #f87171; */
+}
