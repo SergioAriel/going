@@ -183,7 +183,7 @@ const ProfilePage = () => {
 
       })();
     }
-  }, [ready, authenticated]);
+  }, [ready, authenticated, user]);
 
 
   const handlerLogin = async () => {
