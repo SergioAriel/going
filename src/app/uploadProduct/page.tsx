@@ -12,6 +12,7 @@ import {
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
 import { CreateProduct } from "@/interfaces";
+import { useAlert } from "@/context/alert";
 
 
 const UploadProduct = () => {
@@ -32,6 +33,8 @@ const UploadProduct = () => {
     addressWallet: "",
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+
+  const { handleAlert } = useAlert()
 
   const categories = [
     "Electronics",
@@ -120,7 +123,10 @@ const UploadProduct = () => {
 
 
     if (!isValid) {
-      alert("Please fill in all required fields.");
+      handleAlert({
+        message: "Please fill in all required fields.",
+        isError: true
+      })
       return;
     }
 
@@ -129,7 +135,11 @@ const UploadProduct = () => {
       method: "POST",
       body: formDataToSend,
     })
-    alert("Product published successfully!");
+    handleAlert({
+      message: "Product published successfully!",
+      isError: false
+    })
+
   };
 
   return (

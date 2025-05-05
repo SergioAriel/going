@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useEffect, useState } from "react"
 
 interface Alert {
     status: boolean,
@@ -20,6 +20,17 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
         message: "",
         isError: false
     })
+
+    useEffect(()=>{
+        if(alert.status){
+            setTimeout(()=>{
+                setAlert({
+                    ...alert,
+                    status:false
+                })
+            },3000)
+        }
+    },[alert])
 
     const handleAlert = (info: { message: string, isError: boolean }) => {
         setAlert({
