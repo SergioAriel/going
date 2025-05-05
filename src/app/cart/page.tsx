@@ -200,27 +200,8 @@ const CartPage = () => {
                 >
                   Proceed to Checkout
                 </Link>
-                
-                <div className="mt-4 text-center">
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">We accept</div>
-                  <div className="flex justify-center space-x-3">
-                    <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                      VISA
-                    </div>
-                    <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                      MC
-                    </div>
-                    <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                      SOL
-                    </div>
-                    <div className="h-8 w-12 bg-gray-200 dark:bg-gray-700 rounded-md flex items-center justify-center text-xs font-medium text-gray-600 dark:text-gray-300">
-                      PAYPAL
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
-            
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mt-6">
               <h3 className="text-md font-semibold text-gray-900 dark:text-white mb-3">Need Help?</h3>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">

@@ -170,10 +170,6 @@ const ProfilePage = () => {
               email: user?.google?.email,
             })
           })
-            .then(async (response) => {
-              const res = await response.json();
-              console.log(res)
-            })
             .catch((error) => {
               console.error("Error fetching user data:", error);
             });

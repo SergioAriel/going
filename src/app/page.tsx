@@ -3,19 +3,12 @@
 import ProductCard from "@/components/products/ProductCard";
 import HeroSlider from "@/components/layout/HeroSlider";
 import Link from "next/link";
-import client from "@/lib/mongodb";
-import { Product } from "@/interfaces";
+import { getProducts } from "@/lib/products";
 
 
 export default async function Home() {
 
-    const dbFeaturedProducts = await client.db("going")
-    .collection<Product>("products")
-    .find({isFeatured: true})
-    .sort({ metacritic: -1 })
-    .limit(10)
-    .toArray(); 
-
+  const dbFeaturedProducts = await getProducts({ isFeatured: true })
 
   return (
     <main className="min-h-screen">
@@ -40,7 +33,7 @@ export default async function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {
               dbFeaturedProducts?.map((product) => (
-                <ProductCard key={product._id.toString()} product={product} />
+                <ProductCard key={product._id.toString()} product={{ ...product, _id: product._id.toString() }} />
               ))
             }
           </div>
@@ -120,7 +113,7 @@ export default async function Home() {
       </section>
 
       {/* Newsletter Section */}
-      <section className="py-16 bg-gradient-to-r from-primary to-secondary text-white">
+      {/* <section className="py-16 bg-gradient-to-r from-primary to-secondary text-white">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-bold mb-4">Stay Updated</h2>
@@ -143,7 +136,7 @@ export default async function Home() {
             </form>
           </div>
         </div>
-      </section>
+      </section> */}
     </main>
   );
 }

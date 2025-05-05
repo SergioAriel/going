@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   title: "GOING",
   description: "Compra y vende productos utilizando Solana y otras formas de pago",
   icons: {
-    icon: ['/favicon.ico?v=4']
+    icon: ['/favicon.ico']
   },
 
 };

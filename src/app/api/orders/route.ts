@@ -8,8 +8,6 @@ export const POST = async (
     try {
 
         const { buyer, sellers, signature } = await req.json();
-
-        console.log({ buyer, sellers, signature })
         const db = client.db("going");
         const newOrderRecord = await db.collection("orders")
             .insertOne({

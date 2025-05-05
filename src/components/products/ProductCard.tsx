@@ -24,7 +24,6 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.stopPropagation();
     addToCart(product, 1);
     // Optional: Add feedback
-    alert(`Added to cart: ${product.name}`);
   };
 
   return (

@@ -1,31 +1,24 @@
 import { UserData } from '@/interfaces';
 import client from '@/lib/mongodb';
+import { getProducts } from '@/lib/products';
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from 'next/server';
 
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
 export const GET = async () => {
     try {
-        const db = client.db("going");
-        const products = await db
-            .collection("products")
-            .find({})
-            .sort({ metacritic: -1 })
-            .limit(10)
-            .toArray();
+        const products = await getProducts()
         return NextResponse.json({ results: products }, { status: 200 });
     } catch (error) {
         console.error("Error fetching movies:", error);
         return NextResponse.json({ status: 500, error: "Failed to fetch movies" });
     }
 }
-
-
-cloudinary.config({
-    cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.NEXT_PUBLIC_CLOUDINARY_API_KEY,
-    api_secret: process.env.NEXT_PUBLIC_CLOUDINARY_API_SECRET,
-});
-
 
 export const POST = async (request: NextRequest): Promise<NextResponse> => {
     const data = await request.formData();

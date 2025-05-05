@@ -2,6 +2,7 @@
 
 import { CartItem, Product } from "@/interfaces";
 import React, { createContext, useContext, useState, ReactNode } from "react";
+import { useAlert } from "./alert";
 
 // Definir tipo de producto para evitar uso de 'any'
 
@@ -19,6 +20,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const { handleAlert } = useAlert();
 
   const addToCart = (product: Product, quantity: number) => {
     setItems(prevItems => {
@@ -43,7 +45,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
           currency: product.currency || 'USD'
         }];
       }
+
     });
+    handleAlert({message:`Added to cart: ${product.name}`, isError: false})
   };
 
   const removeFromCart = (productId: string) => {

@@ -144,8 +144,6 @@ const CheckoutPage = () => {
     }
   };
 
-  console.log(orderCompleted)
-
   // Function to handle payment form submission
   const handleSubmitPayment = async (e: React.FormEvent) => {
     setLoading(true)
@@ -234,9 +232,6 @@ const CheckoutPage = () => {
       }, 1000)
     }
   }, [loading, paymentError, paymentStage])
-
-
-console.log(user?.linkedAccounts, ready)
 
   if (orderCompleted) {
     return (

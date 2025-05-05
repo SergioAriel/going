@@ -7,6 +7,7 @@ import { StarIcon, ShoppingCartIcon, HeartIcon, CreditCardIcon } from "@heroicon
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { useCart } from "@/context/CartContext";
 import { Product } from "@/interfaces";
+import { useRouter } from "next/navigation";
 
 interface Seller {
   id: number;
@@ -24,16 +25,17 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
   const [quantity, setQuantity] = useState(1);
   const [isWishlist, setIsWishlist] = useState(false);
   const { addToCart } = useCart();
-  
+  const router = useRouter()
+
   const [product, setProduct] = useState<Product | null>(null);
   // const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [seller, setSeller] = useState<Seller | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-    const resolvedParams = use(params);
-    const slug = resolvedParams.slug;
-  
+  const resolvedParams = use(params);
+  const slug = resolvedParams.slug;
+
   // Load product from db.json
   useEffect(() => {
     const fetchProductData = async () => {
@@ -47,14 +49,14 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
         }
         const data: DbData = await response.json();
         // Find the product by its slug
-        const foundProduct  = data.product;
-        
+        const foundProduct = data.product;
+
         if (!foundProduct) {
           setError("Product not found");
           setIsLoading(false);
           return;
         }
-                
+
         // If the product has a single image instead of an array of images
         if (!foundProduct.mainImage) {
           foundProduct.images = ["https://via.placeholder.com/400"];
@@ -66,9 +68,9 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
             setSeller(foundSeller);
           }
         }
-        
+
         setProduct(foundProduct);
-        
+
         setIsLoading(false);
       } catch (error) {
         console.error("Error loading product data:", error);
@@ -79,8 +81,8 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
     fetchProductData();
   }, [slug]);
 
-  
-  
+
+
   if (isLoading) {
     return (
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-20">
@@ -90,7 +92,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
       </div>
     );
   }
-  
+
   if (error || !product) {
     return (
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-20">
@@ -107,8 +109,15 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
 
   const handleAddToCart = () => {
     if (!product) return;
-    
+
     addToCart(product, quantity);
+  };
+
+  const handleBuyer = () => {
+    if (!product) return;
+
+    addToCart(product, quantity);
+    router.push("/checkout")
   };
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -116,7 +125,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
       setQuantity(newQuantity);
     }
   };
-  
+
   const toggleWishlist = () => {
     setIsWishlist(!isWishlist);
   };
@@ -162,7 +171,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                 </div>
               )}
             </div>
-            
+
             {/* Thumbnails */}
             {product.images && product.images.length > 1 && (
               <div className="mt-4 grid grid-cols-4 gap-2">
@@ -170,9 +179,8 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`relative aspect-square rounded-md overflow-hidden border-2 ${
-                      selectedImage === index ? 'border-primary' : 'border-transparent'
-                    }`}
+                    className={`relative aspect-square rounded-md overflow-hidden border-2 ${selectedImage === index ? 'border-primary' : 'border-transparent'
+                      }`}
                   >
                     <Image
                       src={image}
@@ -185,12 +193,12 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
               </div>
             )}
           </div>
-          
+
           {/* Product details */}
           <div className="lg:w-1/2">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{product.name}</h1>
-              
+
               {/* Rating */}
               <div className="flex items-center mb-4">
                 <div className="flex">
@@ -208,7 +216,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                   {product?.rating?.toFixed(1)} ({product.reviews} reviews)
                 </span>
               </div>
-              
+
               {/* Price */}
               <div className="mb-6">
                 <span className="text-3xl font-bold text-gray-900 dark:text-white">${Number(product?.price).toFixed(2)}</span>
@@ -218,17 +226,17 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                   </span>
                 )}
               </div>
-              
+
               {/* Description */}
               <p className="text-gray-600 dark:text-gray-400 mb-6">
                 {product.description}
               </p>
-              
+
               {/* Quantity */}
               <div className="mb-6">
                 <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Quantity</h3>
                 <div className="flex items-center">
-                  <button 
+                  <button
                     onClick={() => handleQuantityChange(quantity - 1)}
                     disabled={quantity <= 1}
                     className="w-10 h-10 rounded-l-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
@@ -243,7 +251,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                     max={product.stock}
                     className="w-16 h-10 border-t border-b border-gray-300 dark:border-gray-600 text-center text-gray-900 dark:text-white bg-white dark:bg-gray-800"
                   />
-                  <button 
+                  <button
                     onClick={() => handleQuantityChange(quantity + 1)}
                     disabled={quantity >= product.stock}
                     className="w-10 h-10 rounded-r-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50"
@@ -252,22 +260,34 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                   </button>
                 </div>
               </div>
-              
+
               {/* Add to cart button */}
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleAddToCart}
-                  className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 px-6 rounded-lg flex items-center justify-center transition-colors"
+              <div className="flex flex-col sm:flex-row gap-4 w-full justify-between">
+                <div
+                  className="flex flex-col gap-4 w-full"
                 >
-                  <ShoppingCartIcon className="h-5 w-5 mr-2" />
-                  Add to Cart
-                </button>
+
+                  <button
+                    onClick={handleBuyer}
+                    className="flex-1 bg-primary hover:bg-primary-dark text-white py-3 px-6 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <ShoppingCartIcon className="h-5 w-5 mr-2" />
+                    Buy!
+                  </button>
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex-1 bg-secondary  hover:bg-secondary-dark text-white py-3 px-6 rounded-lg flex items-center justify-center transition-colors"
+                  >
+                    <ShoppingCartIcon className="h-5 w-5 mr-2" />
+                    Add to Cart
+                  </button>
+                </div>
                 <button
                   onClick={toggleWishlist}
                   className="flex-1 sm:flex-none border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   {isWishlist ? (
-                    <HeartSolidIcon className="h-5 w-5 text-red-500" />
+                    <HeartSolidIcon className="h-5 w-5 text-secondary" />
                   ) : (
                     <HeartIcon className="h-5 w-5" />
                   )}
@@ -275,7 +295,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                 </button>
               </div>
             </div>
-            
+
             {/* Specifications */}
             {/* {product.specifications && product.specifications.length > 0 && (
               <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
@@ -292,7 +312,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
             )} */}
           </div>
         </div>
-        
+
         {/* Seller Information */}
         {seller && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8 mt-8">
