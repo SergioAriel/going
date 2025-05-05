@@ -30,7 +30,7 @@ const CheckoutPage = () => {
   const router = useRouter();
   const { user } = usePrivy();
   const { items, getTotalItems, getTotalPrice, clearCart } = useCart();
-  const { wallets, ready } = useSolanaWallets();
+  const { wallets } = useSolanaWallets();
   const { sendTransaction } = useSendTransaction();
   const [step, setStep] = useState(1);
   const [selectedPayment, setSelectedPayment] = useState("");
