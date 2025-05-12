@@ -9,8 +9,8 @@ import {
   HeartIcon,
   CreditCardIcon,
   TruckIcon,
-  CogIcon,
-  BellIcon,
+  // CogIcon,
+  // BellIcon,
   ArrowRightIcon,
   ArrowRightStartOnRectangleIcon,
   DocumentDuplicateIcon,
@@ -18,36 +18,23 @@ import {
 } from "@heroicons/react/24/outline";
 import { useLogin, useLogout, usePrivy } from "@privy-io/react-auth";
 import { useFundWallet } from "@privy-io/react-auth/solana";
-
-
-// Type for user data
-interface UserData {
-  name: string;
-  addresses: string[];
-  email: string;
-  avatar: string;
-  joined: string;
-  location: string;
-  bio: string;
-  website: string;
-  twitter: string;
-  x: string;
-  instagram: string;
-  telegram: string;
-  facebook: string;
-}
-
+import { Addresses, Product, User } from "@/interfaces";
+import { useAlert } from "@/context/alert";
+import { getUser, updateUser, uploadUser } from "@/lib/ServerActions/users";
+import { getProducts } from "@/lib/ServerActions/products";
+import { useRouter, useSearchParams } from "next/navigation";
+import { PencilIcon } from "@heroicons/react/24/solid";
 
 // Available profile tabs
 const tabs = [
   { id: "account", name: "My Account", icon: UserIcon },
   { id: "orders", name: "Orders", icon: ShoppingBagIcon },
-  { id: "wishlist", name: "Wishlist", icon: HeartIcon },
+  // { id: "wishlist", name: "Wishlist", icon: HeartIcon },
   { id: "payment", name: "Associated Wallets", icon: CreditCardIcon },
   { id: "addresses", name: "Addresses", icon: TruckIcon },
   { id: "selling", name: "My Products", icon: ShoppingBagIcon },
-  { id: "notifications", name: "Notifications", icon: BellIcon },
-  { id: "settings", name: "Settings", icon: CogIcon },
+  // { id: "notifications", name: "Notifications", icon: BellIcon },
+  // { id: "settings", name: "Settings", icon: CogIcon },
 ];
 
 const orderHistory = [
@@ -55,7 +42,7 @@ const orderHistory = [
     id: "ORD-2023-001",
     date: "June 15, 2023",
     total: 239.98,
-    status: "Delivered",
+    status: "delivered",
     items: [
       { name: "Bluetooth Headphones", quantity: 1, price: 89.99 },
       { name: "Sports Smartwatch", quantity: 1, price: 149.99 }
@@ -65,7 +52,7 @@ const orderHistory = [
     id: "ORD-2023-002",
     date: "July 23, 2023",
     total: 349.50,
-    status: "In Transit",
+    status: "in_transit",
     items: [
       { name: "Android Tablet 10'", quantity: 1, price: 349.50 }
     ]
@@ -74,7 +61,7 @@ const orderHistory = [
     id: "ORD-2023-003",
     date: "August 5, 2023",
     total: 124.95,
-    status: "Processing",
+    status: "processing",
     items: [
       { name: "Mechanical Keyboard", quantity: 1, price: 124.95 }
     ]
@@ -82,13 +69,14 @@ const orderHistory = [
 ];
 const ProfilePage = () => {
   const { ready, authenticated, user } = usePrivy()
-  const [activeTab, setActiveTab] = useState("account");
-  const [userData, setUserData] = useState<UserData>({
+  const [userData, setUserData] = useState<User>({
+    _id: "",
     name: "going",
+    isSeller: false,
     addresses: [],
     email: "going@example.com",
-    avatar: "/goingLogo1.png",
-    joined: "January 2023",
+    avatar: "/logo.png",
+    joined: "January 2025",
     location: "",
     bio: "",
     website: "",
@@ -96,13 +84,29 @@ const ProfilePage = () => {
     x: "",
     instagram: "",
     telegram: "",
-    facebook: "",
+    facebook: ""
   });
 
   const { login } = useLogin()
   const { logout } = useLogout()
-
+  const { handleAlert } = useAlert()
   // Content to display based on the selected tab
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const tabParams = searchParams.get('tab')
+
+  const [activeTab, setActiveTab] = useState(tabParams || "account");
+
+  useEffect(() => {
+    if (tabParams) {
+      const tab = tabs.find((tab) => tab.id === tabParams);
+      if (tab) {
+        setActiveTab(tab.id);
+        router.replace(`/profile`);
+      }
+    }
+  }, [tabParams]);
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "account":
@@ -114,11 +118,11 @@ const ProfilePage = () => {
       case "payment":
         return <PaymentTab />;
       case "addresses":
-        return <AddressesTab />;
+        return <AddressesTab userData={userData} setUserData={setUserData} />;
       case "notifications":
         return <NotificationsTab />;
       case "selling":
-        return <SellingTab />;
+        return <SellingTab userData={userData} setUserData={setUserData} />;
       case "settings":
         return <SettingsTab />;
       default:
@@ -127,23 +131,24 @@ const ProfilePage = () => {
   };
 
   useEffect(() => {
-    if (ready && authenticated) {
+    if (ready && authenticated && user) {
       (async () => {
         try {
-          const res = await fetch(`/api/users?_id=${user?.id.split("did:privy:")[1]}`)
-          const resUserData = await res.json();
-          if (res.ok) {
+          const resUserData = await getUser(user?.id)
+
+          if (resUserData) {
             setUserData((prev) => ({
               ...prev,
               ...resUserData
             }))
             return
           }
-
           // Fetch user data or perform any necessary actions
           const defaultUserData = {
+            _id: "",
             name: "unknown",
             addresses: [],
+            isSeller: false,
             email: "",
             avatar: "",
             joined: "",
@@ -158,21 +163,13 @@ const ProfilePage = () => {
           }
 
           setUserData(defaultUserData)
-          fetch("/api/users", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              _id: user?.id.split("did:privy:")[1],
-              // addresses: user?.linkedAccounts?.filter((account) => account.type === "wallet").map((account) => account.address),
-              name: user?.google?.name,
-              email: user?.google?.email,
-            })
+          uploadUser({
+            ...defaultUserData,
+            _id: user?.id,
+            // addresses: user?.linkedAccounts?.filter((account) => account.type === "wallet").map((account) => account.address),
+            name: user?.google?.name || "",
+            email: user?.google?.email || "",
           })
-            .catch((error) => {
-              console.error("Error fetching user data:", error);
-            });
         } catch (error) {
           console.log(error)
         }
@@ -190,8 +187,6 @@ const ProfilePage = () => {
     }
   }
 
-
-
   return (
 
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
@@ -202,18 +197,19 @@ const ProfilePage = () => {
           {/* Navigation Sidebar */}
           <div className="md:w-1/4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <div className="flex items-center space-x-4 mb-6">
-                <div className="relative h-16 w-16 rounded-full overflow-hidden">
+              <div className="flex flex-wrap items-center w-full mb-6">
+                <div className="h-16 w-16 rounded-full">
                   <Image
-                    src={userData.avatar || "/goingLogo1.png"}
+                    src={userData.avatar || "/logo.png"}
                     alt={userData.name}
-                    fill
+                    width={100}
+                    height={100}
                     className="object-cover"
                   />
                 </div>
-                <div>
+                <div className="w-full">
                   <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{userData.name}</h2>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{userData.email}</p>
+                  <p className="w-full text-sm text-gray-600 dark:text-gray-400 overflow-hidden text-ellipsis">{userData.email}</p>
                 </div>
               </div>
 
@@ -222,18 +218,26 @@ const ProfilePage = () => {
                   tabs.map((tab) => (
                     <button
                       key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
+                      onClick={() => {
+                        if (!userData.isSeller && tab.id === "addresses") {
+                          handleAlert({
+                            message: "Only Available to Sellers",
+                            isError: true
+                          })
+                        }
+                        setActiveTab(tab.id)
+                      }}
                       disabled={!(ready && authenticated)}
                       className={
                         `
-                          w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors 
+                           w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors 
                           ${activeTab === tab.id ? "bg-primary text-white" : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"}
-                          ${!(ready && authenticated) && "cursor-not-allowed"}
+                          ${(!(ready && authenticated) || (!userData.isSeller && tab.id === "addresses")) ? "cursor-not-allowed" : "cursor-pointer"}
                         `
                       }
                     >
                       <tab.icon className="h-5 w-5" />
-                      <span>{tab.name}</span>
+                      <span title="afasf">{tab.name}</span>
                     </button>
                   ))
                 }
@@ -273,8 +277,17 @@ const ProfilePage = () => {
 };
 
 // Components for each tab
-const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData: Dispatch<SetStateAction<UserData>> }) => {
+const AccountTab = ({ userData, setUserData }: { userData: User, setUserData: Dispatch<SetStateAction<User>> }) => {
   const { ready, authenticated, user, linkGoogle } = usePrivy();
+
+  const handlerUser = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+    setUserData((prev) => ({
+      ...prev,
+      name: e.target.value,
+    }));
+  }
+
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Personal Information</h2>
@@ -298,7 +311,7 @@ const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData
         >
           <div className="relative h-24 w-24 rounded-full overflow-hidden">
             <Image
-              src={userData.avatar || "/goingLogo1.png"}
+              src={userData.avatar || "/logo.png"}
               alt={userData.name}
               fill
               className="object-cover"
@@ -340,7 +353,8 @@ const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData
             <input
               type="text"
               id="name"
-              defaultValue={userData.name}
+              value={userData.name}
+              onChange={handlerUser}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
@@ -352,7 +366,8 @@ const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData
             <input
               type="email"
               id="email"
-              defaultValue={userData.email}
+              value={userData.email}
+              onChange={handlerUser}
               className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
             />
           </div>
@@ -418,9 +433,6 @@ const AccountTab = ({ userData, setUserData }: { userData: UserData, setUserData
             </button>
           </div>
         }
-
-
-
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Social Media Links</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -514,9 +526,9 @@ const OrdersTab = () => {
                   <span className="text-gray-500 dark:text-gray-400 text-sm">{order.date}</span>
                 </div>
                 <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mt-2
-                  ${order.status === "Delivered"
+                  ${order.status === "delivered"
                     ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                    : order.status === "In Transit"
+                    : order.status === "in_transit"
                       ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                       : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                   }`}
@@ -668,42 +680,270 @@ const PaymentTab = () => {
   );
 };
 
-const AddressesTab = () => {
+
+
+const AddressesTab = ({ userData, setUserData }: { userData: User, setUserData: Dispatch<SetStateAction<User>> }) => {
+  const { handleAlert } = useAlert()
+  const [address, setAddress] = useState<Addresses>({
+    name: "",
+    address: "",
+    city: "",
+    state: "",
+    country: "",
+    zip: "",
+    phone: ""
+  });
+  const [isEditing, setIsEditing] = useState(false);
+  const [selectedEditAddress, setSelectedEditAddress] = useState<number | null>(null);
+
+  const handleUser = async (indexAddress: number | null) => {
+    const fundName = userData.addresses.find((savedAddress) => savedAddress.name === address.name);
+    if (fundName) {
+      handleAlert({
+        message: "Address name already exists",
+        isError: true
+      })
+    }
+    if (Object.values(address).every((field: string) => address[field as keyof typeof address] !== "")) {
+      handleAlert({
+        message: "Please fill all fields",
+        isError: true
+      })
+      return;
+    }
+
+    const updateUserData = indexAddress ?
+      userData.addresses.map((savedAddress, index) => {
+        if (indexAddress === index) {
+          return {
+            ...savedAddress,
+            ...address
+          }
+        }
+        return savedAddress;
+      }
+      )
+      :
+      [...userData.addresses, address]
+    const resUpdateUser = await updateUser({
+      ...userData,
+      addresses: updateUserData
+    })
+
+    if (resUpdateUser.status) {
+      setUserData((prev) => {
+        return {
+          ...prev,
+          addresses: updateUserData
+        }
+      });
+      setAddress({
+        name: "",
+        address: "",
+        city: "",
+        state: "",
+        country: "",
+        zip: "",
+        phone: ""
+      });
+      setIsEditing(false);
+      setSelectedEditAddress(null);
+      handleAlert({
+        message: "Address updated successfully",
+        isError: false
+      })
+    } else {
+      handleAlert({
+        message: "Failed to update address",
+        isError: true
+      })
+    }
+  };
+
+  const handleDeleteAddress = async (indexAddress: number) => {
+    const resUpdateUser = await updateUser({
+      ...userData,
+      addresses: userData.addresses.filter((_, index) => index !== indexAddress)
+    })
+
+    if (resUpdateUser.status) {
+      setUserData((prev) => {
+        return {
+          ...prev,
+          addresses: prev.addresses.filter((_, index) => index !== indexAddress)
+        }
+      });
+      handleAlert({
+        message: "Address deleted successfully",
+        isError: false
+      })
+    } else {
+      handleAlert({
+        message: "Failed to delete address",
+        isError: true
+      })
+    }
+  }
+
   return (
     <div>
       <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">My Addresses</h2>
 
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">Saved Addresses</h3>
-          <button className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors">
+          <button
+            onClick={() => {
+              setIsEditing(true);
+              setAddress({
+                name: "",
+                address: "",
+                city: "",
+                state: "",
+                country: "",
+                zip: "",
+                phone: ""
+              });
+            }}
+            className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors">
             + Add Address
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <div className="flex justify-between">
-              <div className="text-gray-900 dark:text-white font-medium">Home</div>
-              <div className="flex space-x-2">
-                <button className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary">Edit</button>
-                <button className="text-gray-500 hover:text-error dark:text-gray-400 dark:hover:text-error">Delete</button>
+        {
+          isEditing ?
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div
+                className="relative w-min mb-4"
+              >
+                <input
+                  onChange={(e) => {
+
+                    setAddress({ ...address, name: e.target.value })
+                  }}
+                  type="text"
+                  placeholder="Address Name"
+                  className="text-lg font-medium text-gray-900 dark:text-white"
+                  value={address.name}
+                  required
+                  autoFocus
+                  autoComplete="none"
+                />
+                <div className="absolute inset-y-0 right-2 flex items-center pointer-events-none">
+
+                  <PencilIcon className="w-4 h-4 " />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <input
+                  type="text"
+                  name="address"
+                  value={address.address}
+                  onChange={(e) => setAddress({ ...address, address: e.target.value })}
+                  placeholder="address"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={address.city}
+                  onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                  placeholder="City"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={address.state}
+                  onChange={(e) => setAddress({ ...address, state: e.target.value })}
+                  placeholder="State"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={address.zip}
+                  onChange={(e) => setAddress({ ...address, zip: e.target.value })}
+                  placeholder="Zip Code"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={address.country}
+                  onChange={(e) => setAddress({ ...address, country: e.target.value })}
+                  placeholder="Country"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                />
+                <input
+                  type="text"
+                  value={address.phone}
+                  onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                  placeholder="Phone Number"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                />
+              </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setAddress({
+                      name: "",
+                      address: "",
+                      city: "",
+                      state: "",
+                      country: "",
+                      zip: "",
+                      phone: ""
+                    });
+                  }}
+                  className="px-6 py-2 text-primary-dark rounded-lg font-medium transition-colors mr-4"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleUser(selectedEditAddress)}
+                  className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
+                >
+                  Save Changes
+                </button>
               </div>
             </div>
-            <div className="mt-2 text-gray-600 dark:text-gray-400">
-              <p>Carlos Rodríguez</p>
-              <p>Main Avenue 123</p>
-              <p>Mexico City, 12345</p>
-              <p>Mexico</p>
-              <p>Tel: +52 55 1234 5678</p>
+            :
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {
+                userData?.addresses?.map((address, indexAddress) => (
+                  <div key={address.name as string} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div className="flex justify-between">
+                      <div className="text-gray-900 dark:text-white font-medium">{address.name}</div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setIsEditing(true);
+                            setSelectedEditAddress(indexAddress);
+                            setAddress(address);
+                          }
+                          }
+                          className="text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-primary"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteAddress(indexAddress)}
+                          className="text-gray-500 hover:text-error dark:text-gray-400 dark:hover:text-error"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    <div className="mt-2 text-gray-600 dark:text-gray-400">
+                      <p>{address.address}</p>
+                      <p>{address.city}, {address.state}</p>
+                      <p>{address.zip}</p>
+                      <p>{address.country}</p>
+                      <p>Tel: {address.phone}</p>
+                    </div>
+                  </div>
+                ))
+              }
             </div>
-            <div className="mt-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary-dark bg-opacity-10 text-primary-dark">
-                Primary Address
-              </span>
-            </div>
-          </div>
-        </div>
+        }
+
       </div>
     </div>
   );
@@ -878,11 +1118,83 @@ const SettingsTab = () => {
   );
 };
 
-const SellingTab = () => {
-  const userProducts = [
-    { id: "PROD-001", name: "Wireless Earbuds", price: 49.99, status: "Active" },
-    { id: "PROD-002", name: "Gaming Mouse", price: 29.99, status: "Inactive" },
-  ];
+const SellingTab = ({ userData, setUserData }: { userData: User, setUserData: Dispatch<SetStateAction<User>> }) => {
+  const [isSeller, setIsSeller] = useState(userData.isSeller)
+  const [userProducts, setUserProducts] = useState<Product[] | null>()
+  const { handleAlert } = useAlert();
+
+  useEffect(() => {
+    if (userData.isSeller) {
+      (async () => {
+        const products = await getProducts({ seller: userData._id })
+        if (products.length) {
+          setUserProducts(products);
+        } else {
+          handleAlert({
+            message: "Error fetching user products",
+            isError: true
+          })
+        }
+      }
+      )()
+    }
+  }, [userData])
+
+  const handlerSeller = async () => {
+
+    const resp = await updateUser({
+      ...userData,
+      isSeller
+    })
+    if (resp.status) {
+      setUserData({
+        ...userData,
+        isSeller
+      })
+    }
+  }
+
+  if (!userData.addresses.length) {
+    if (!userData.isSeller) {
+      return (
+        <div>
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Becoming a seller</h2>
+          <div className="flex flex-col w-full gap-6">
+            <p>Comming Soon KYC</p>
+            <div className="flex flex-col w-full gap-4">
+              <p>Test seller feature</p>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input checked={isSeller} onChange={() => setIsSeller(!isSeller)} type="checkbox" className="sr-only peer" />
+                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary"></div>
+              </label>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handlerSeller}
+              className="px-6 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg font-medium transition-colors"
+            >
+              Send Information.
+            </button>
+          </div>
+        </div>
+      )
+    }
+    return (
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Becoming a seller</h2>
+        <p>To become a seller, please add an address.</p>
+        <Link
+          href="/profile?tab=addresses"
+          className="px-6 py-2 bg-primary hover:bg-primary-dark text-black rounded-lg font-medium transition-colors"
+        >
+          Add Address
+        </Link>
+      </div>
+    )
+
+  }
 
   return (
     <div>
@@ -898,8 +1210,8 @@ const SellingTab = () => {
       </div>
 
       <div className="space-y-4">
-        {userProducts.map((product) => (
-          <div key={product.id} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
+        {userProducts?.map((product) => (
+          <div key={product._id as string} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex justify-between items-center">
             <div>
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">{product.name}</h3>
               <p className="text-sm text-gray-600 dark:text-gray-400">${product.price.toFixed(2)}</p>

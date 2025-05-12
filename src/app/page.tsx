@@ -3,7 +3,7 @@
 import ProductCard from "@/components/products/ProductCard";
 import HeroSlider from "@/components/layout/HeroSlider";
 import Link from "next/link";
-import { getProducts } from "@/lib/products";
+import { getProducts } from "@/lib/ServerActions/products";
 
 
 export default async function Home() {

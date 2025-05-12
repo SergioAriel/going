@@ -18,7 +18,7 @@ import { useAlert } from "@/context/alert";
 const UploadProduct = () => {
   const { user } = usePrivy();
   const [infoProduct, setInfoProduct] = useState<CreateProduct>({
-    seller: user?.id.split('did:privy:')[1] || "",
+    seller: user?.id || "",
     name: "",
     description: "",
     category: "",
@@ -37,15 +37,15 @@ const UploadProduct = () => {
   const { handleAlert } = useAlert()
 
   const categories = [
-    "Electronics",
-    "Clothing and Accessories",
-    "Home and Garden",
-    "Sports",
-    "Toys",
-    "Health and Beauty",
-    "Food",
-    "Services",
-    "Other"
+    {name:"Electronics", value:"electronics"},
+    { name: "Clothing and Accessories", value: "clothing" },
+    { name: "Home and Garden", value: "home" },
+    { name: "Sports", value: "sports" },
+    { name: "Toys", value: "toys" },
+    { name: "Health and Beauty", value: "health" },
+    { name: "Food", value: "food" },
+    { name: "Services", value: "services" },
+    { name: "Other", value: "other" },
   ];
 
   const currencies = [
@@ -208,8 +208,8 @@ const UploadProduct = () => {
                         required
                       >
                         <option value="" disabled>Select a category</option>
-                        {categories.map((category) => (
-                          <option key={category} value={category}>{category}</option>
+                        {categories.map(({name, value}) => (
+                          <option key={value} value={value}>{name}</option>
                         ))}
                       </select>
                       <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />

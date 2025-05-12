@@ -1,8 +1,9 @@
+import { ObjectId } from "mongodb";
 
-export interface UserData {
+export interface User {
   _id: string;
   name: string;
-  addresses: Array<string>;
+  addresses: Array<Addresses>;
   email: string;
   avatar: string;
   joined: string;
@@ -14,6 +15,16 @@ export interface UserData {
   instagram: string;
   telegram: string;
   facebook: string;
+  isSeller: boolean
+}
+export interface Addresses {
+  name: string;
+  address: string;
+  city: string;
+  state: string;
+  country: string;
+  zip: string;
+  phone: string;
 }
 export interface CreateProduct {
   seller: string;
@@ -32,7 +43,7 @@ export interface CreateProduct {
 }
 
 export interface Product {
-  _id: string;
+  _id: string | ObjectId;
   seller: string;
   name: string;
   addressWallet: string;
@@ -40,6 +51,7 @@ export interface Product {
   category: string;
   price: number;
   currency: string;
+  status: string;
   images: Array<string>;
   mainImage: string;
   stock: number;

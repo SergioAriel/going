@@ -4,28 +4,28 @@
   /* Colores base actualizados para reflejar mejor el logo */
   --background: #ffffff;
   --foreground: #171717;
-  
+
   /* Actualización de colores primarios y secundarios para coincidir con el logo */
   --primary: #14BFFB;
   --primary-light: #7CDFFF;
   --primary-dark: #0e9bd9;
-  
+
   --secondary: #D300E5;
   --secondary-light: #F26EFF;
   --secondary-dark: #a900b8;
-  
+
   /* Colores adicionales para crear una paleta más rica */
   --accent: #f5f5f5;
   --border: #e5e5e5;
   --success: #10b981;
   --error: #ef4444;
   --warning: #f59e0b;
-  
+
   /* Nuevas variables para gradientes inspirados en el logo */
   --gradient-primary: linear-gradient(135deg, var(--primary-light), var(--primary), var(--primary-dark));
   --gradient-secondary: linear-gradient(135deg, var(--secondary-light), var(--secondary), var(--secondary-dark));
   --gradient-brand: linear-gradient(135deg, var(--primary), var(--secondary));
-  
+
   /* Variables para elementos gráficos */
   --dot-size: 4px;
   --line-thickness: 2px;
@@ -58,7 +58,7 @@
     --foreground: #ededed;
     --accent: #1a1a1a;
     --border: #2a2a2a;
-    
+
     /* Ajustes para modo oscuro */
     --primary-light: #5BBDFF;
     --secondary-light: #E54FFF;
@@ -161,9 +161,17 @@ body {
 
 /* Animaciones para microinteracciones */
 @keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .animate-pulse {
@@ -218,11 +226,14 @@ body {
     /* Al inicio, el gradiente está posicionado de manera que solo se vea el rojo claro */
     /* Usamos un gradiente que va de rojo oscuro (0%) a rojo claro (50%), y luego sólido rojo claro (hasta 100%) */
     /* Esto permite que el rojo oscuro "entre" desde la izquierda */
-     background-position-x: 100%; /* Posiciona el 50% del gradiente (la transición) al 100% del botón */
+    background-position-x: 100%;
+    /* Posiciona el 50% del gradiente (la transición) al 100% del botón */
   }
+
   100% {
-     /* Al final, el gradiente está posicionado de manera que se vea completamente el rojo oscuro */
-     background-position-x: 0%; /* Posiciona el 50% del gradiente (la transición) al 0% del botón */
+    /* Al final, el gradiente está posicionado de manera que se vea completamente el rojo oscuro */
+    background-position-x: 0%;
+    /* Posiciona el 50% del gradiente (la transición) al 0% del botón */
   }
 }
 
@@ -238,7 +249,8 @@ body {
   /* linear: velocidad constante */
   /* forwards: la animación se queda en el estado final (100%) */
   animation: sweep-red 1s linear forwards;
-  color: white; /* Color del texto sobre el fondo rojo */
+  color: white;
+  /* Color del texto sobre el fondo rojo */
   background-repeat: no-repeat;
   /* Estado inicial del background-position-x antes de que comience la animación */
   /* Debe coincidir con el 0% del keyframe para evitar un salto inicial */
@@ -252,11 +264,29 @@ body {
 /* Estilos base del botón */
 /* Asegúrate de que la transición de background también esté definida aquí para
    cuando .error-animation se remueve y vuelve a los estilos normales (ej. bg-primary) */
-.inline-flex { /* O la clase base de tu botón */
-   /* ... otros estilos ... */
-   /* Asegura una transición suave de la propiedad background */
-   transition: background 0.5s ease, color 0.5s ease, opacity 0.5s ease;
-   /* Define el color de fondo inicial del botón, que será visible antes/después del error */
-   /* Si quieres que el botón empiece rojo claro ANTES de la animación, puedes definirlo aquí */
-   /* background-color: #f87171; */
+.inline-flex {
+  /* O la clase base de tu botón */
+  /* ... otros estilos ... */
+  /* Asegura una transición suave de la propiedad background */
+  transition: background 0.5s ease, color 0.5s ease, opacity 0.5s ease;
+  /* Define el color de fondo inicial del botón, que será visible antes/después del error */
+  /* Si quieres que el botón empiece rojo claro ANTES de la animación, puedes definirlo aquí */
+  /* background-color: #f87171; */
+}
+
+
+/* Define la animación de destello */
+@keyframes flash {
+  0%, 100% {
+    filter: brightness(1); /* Completamente visible al inicio y al final */
+  }
+  50% {
+    filter: brightness(1.50); /* Menos visible a la mitad de la animación */
+  }
+}
+
+/* Aplica la animación a los elementos con la clase flashing-ellipse */
+.flashing-ellipse {
+  filter: drop-shadow(0px 0px 5px rgba(0, 0, 0, 0.5));
+  animation: flash 2s infinite ease-in-out; /* Nombre de la animación, duración, repetición y función de temporización */
 }

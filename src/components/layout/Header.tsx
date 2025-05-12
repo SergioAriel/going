@@ -42,7 +42,8 @@ const Header = () => {
                 alt="Going Marketplace" 
                 width={120} 
                 height={40} 
-                className="transition-transform duration-300 hover:scale-105"
+                style={{ width: "100%", height: "100%" }}
+                className=" transition-transform duration-300 hover:scale-105"
               />
             </div>
           </Link>

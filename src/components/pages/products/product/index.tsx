@@ -1,111 +1,33 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { StarIcon, ShoppingCartIcon, HeartIcon, CreditCardIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from "@heroicons/react/24/solid";
 import { useCart } from "@/context/CartContext";
-import { Product } from "@/interfaces";
+import { Product, User } from "@/interfaces";
 import { useRouter } from "next/navigation";
 
-interface Seller {
-  id: number;
-  name: string;
-  wallet: string;
-}
-
-interface DbData {
-  product: Product;
-  seller: Seller[];
-}
-
-const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) => {
+const ProductDetail = ({product, seller}: {product: Product, seller?: User | null}) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlist, setIsWishlist] = useState(false);
   const { addToCart } = useCart();
   const router = useRouter()
-
-  const [product, setProduct] = useState<Product | null>(null);
   // const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-  const [seller, setSeller] = useState<Seller | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState("");
 
-  const resolvedParams = use(params);
-  const slug = resolvedParams.slug;
-
-  // Load product from db.json
-  useEffect(() => {
-    const fetchProductData = async () => {
-      setIsLoading(true);
-      try {
-        const response = await fetch(`/api/products/${slug}`, {
-          cache: 'no-store'
-        });
-        if (!response.ok) {
-          throw new Error('Failed to load the database');
-        }
-        const data: DbData = await response.json();
-        // Find the product by its slug
-        const foundProduct = data.product;
-
-        if (!foundProduct) {
-          setError("Product not found");
-          setIsLoading(false);
-          return;
-        }
-
-        // If the product has a single image instead of an array of images
-        if (!foundProduct.mainImage) {
-          foundProduct.images = ["https://via.placeholder.com/400"];
-        }
-
-        if (foundProduct.seller) {
-          const foundSeller = await (await fetch(`/api/users?_id=${foundProduct.seller}`)).json();
-          if (foundSeller) {
-            setSeller(foundSeller);
-          }
-        }
-
-        setProduct(foundProduct);
-
-        setIsLoading(false);
-      } catch (error) {
-        console.error("Error loading product data:", error);
-        setError("Failed to load product information. Please try again later.");
-        setIsLoading(false);
-      }
-    };
-    fetchProductData();
-  }, [slug]);
-
-
-
-  if (isLoading) {
-    return (
-      <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Loading product...</h1>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">Product not found</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-8">{error || "The product you are looking for does not exist or has been removed."}</p>
-          <Link href="/products" className="inline-flex items-center px-6 py-3 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors">
-            View all products
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const nameCategories = {
+    electronics:"Electronics",
+    clothing: "Clothing and Accessories",
+    home: "Home and Garden",
+    sports: "Sports",
+    toys: "Toys",
+    health: "Health and Beauty",
+    food: "Food", 
+    namservicese: "Services",
+    other: "Other",
+  };
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -146,7 +68,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
             </li>
             <li className="mr-2">
               <Link href={`/products?category=${product.category}`} className="hover:text-primary dark:hover:text-primary">
-                {product.category}
+                {nameCategories[product.category as keyof typeof nameCategories]}
               </Link>
               <span className="mx-2">/</span>
             </li>
@@ -186,6 +108,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
                       src={image}
                       alt={`${product.name} thumbnail ${index + 1}`}
                       fill
+                      sizes="100%"
                       className="object-cover"
                     />
                   </button>
@@ -323,7 +246,7 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
               </div>
               <div className="ml-4">
                 <p className="text-gray-900 dark:text-white font-medium">{seller.name}</p>
-                <p className="text-gray-600 dark:text-gray-400 text-sm">Wallet: {seller.wallet.substring(0, 6)}...{seller.wallet.substring(seller.wallet.length - 4)}</p>
+                <span>{seller.bio}</span>
               </div>
             </div>
           </div>
@@ -379,4 +302,4 @@ const ProductDetailPage = ({ params }: { params: Promise<{ slug: string }> }) =>
   );
 };
 
-export default ProductDetailPage;
+export default ProductDetail;

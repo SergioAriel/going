@@ -30,13 +30,13 @@ const ProductCard = ({ product }: { product: Product }) => {
     <Link href={`/products/${product?._id}`} className="block group">
       <div className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300">
         <div className="relative">
-          <div className="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
+          <div className=" flex items-center justify-center aspect-square overflow-hidden bg-gray-100 dark:bg-gray-700">
             <Image
-              src={product?.mainImage}
+              src={product?.mainImage || "/imageNotFound.svg"}
               alt={product?.name}
               width={300}
               height={300}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              className={`${product?.mainImage ? "w-full h-full" : "w-1/2 h-1/2"} object-cover group-hover:scale-105 transition-transform duration-300`}
             />
             <button
               onClick={toggleWishlist}
@@ -71,9 +71,9 @@ const ProductCard = ({ product }: { product: Product }) => {
         </div>
 
         <div className="p-4">
-        <h3 title={product.name} className="text-lg font-medium text-gray-900 dark:text-white mb-1 group-hover:text-primary transition-colors whitespace-nowrap overflow-hidden text-ellipsis">
-  {product.name}
-</h3>
+          <h3 title={product.name} className="text-lg font-medium text-gray-900 dark:text-white mb-1 group-hover:text-primary transition-colors whitespace-nowrap overflow-hidden text-ellipsis">
+            {product.name}
+          </h3>
 
           <div className="flex items-center mb-2">
             <div className="flex">
@@ -92,7 +92,7 @@ const ProductCard = ({ product }: { product: Product }) => {
             </span>
           </div>
 
-          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-1">
             {product.description}
           </p>
 
@@ -118,8 +118,8 @@ const ProductCard = ({ product }: { product: Product }) => {
             <button
               onClick={handleAddToCart}
               className={`p-2 rounded-full ${product.stock > 0
-                  ? 'bg-primary text-white hover:bg-primary-dark'
-                  : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
+                ? 'bg-primary text-white hover:bg-primary-dark'
+                : 'bg-gray-300 dark:bg-gray-700 text-gray-500 dark:text-gray-400 cursor-not-allowed'
                 } transition-colors`}
               disabled={product.stock <= 0}
             >

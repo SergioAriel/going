@@ -1,71 +1,84 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import { FunnelIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Product } from "@/interfaces";
 import ProductCard from "@/components/products/ProductCard";
-import { getProducts } from "@/lib/products";
+import { getProducts } from "@/lib/ServerActions/products";
 import { SortDirection } from "mongodb";
+import LogoLoading from "@/components/svgs/LogoLoading";
+import { useSearchParams } from "next/navigation";
 // import { getProducts } from "@/lib/products";
 
 // Categories for filtering
-  const categories = [
-    "All",
-    "Electronics",
-    "Clothing and Accessories",
-    "Home and Garden",
-    "Sports",
-    "Toys",
-    "Health and Beauty",
-    "Food",
-    "Services",
-    "Other"
-  ];
+const categories = [
+  { name: "All", value: "all" },
+  { name: "Electronics", value: "electronics" },
+  { name: "Clothing and Accessories", value: "clothing" },
+  { name: "Home and Garden", value: "home" },
+  { name: "Sports", value: "sports" },
+  { name: "Toys", value: "toys" },
+  { name: "Health and Beauty", value: "health" },
+  { name: "Food", value: "food" },
+  { name: "Services", value: "services" },
+  { name: "Other", value: "other" },
+];
 
 interface Sort {
   name: string;
   value: string;
-  sort: {[key: string]: SortDirection}
+  sort: { [key: string]: SortDirection }
 }
 
 // Sort options
 const sortOptions: Sort[] = [
   // { name: "Most Relevant", value: "relevance", sort: {} },
-  { name: "Price: Low to High", value: "price-asc", sort: { price: 1 } as {[key: string]: SortDirection} },
-  { name: "Price: High to Low", value: "price-desc", sort: { price: -1 } as {[key: string]: SortDirection} },
-  { name: "Best Rated", value: "rating", sort: { rating: 1 } as {[key: string]: SortDirection} },
-  { name: "Newest", value: "newest", sort: { date: 1 } as {[key: string]: SortDirection} },
+  { name: "Price: Low to High", value: "price-asc", sort: { price: 1 } as { [key: string]: SortDirection } },
+  { name: "Price: High to Low", value: "price-desc", sort: { price: -1 } as { [key: string]: SortDirection } },
+  { name: "Best Rated", value: "rating", sort: { rating: 1 } as { [key: string]: SortDirection } },
+  { name: "Newest", value: "newest", sort: { date: 1 } as { [key: string]: SortDirection } },
 ];
 
-const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) => {
+const ProductsRendering = (
+  { dbProducts }:
+    {
+      dbProducts: Promise<Product[]>,
+    }
+) => {
+  const initialProducts = use<Product[]>(dbProducts);
   const [products, setProducts] = useState<Product[]>(initialProducts);
-  const [selectedCategory, setSelectedCategory] = useState("All");
   const [sortBy, setSortBy] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(!products);
   const [error, setError] = useState("");
-
+  
+  const searchParams = useSearchParams()
+  
+  const categoryParams = searchParams.get('category')
+  
+  const [selectedCategory, setSelectedCategory] = useState(categoryParams || "all");
   // Filter products by category and search
   useEffect(() => {
-    (async()=>{
+    (async () => {
       try {
-          const find = {
-            ...(selectedCategory !== "All" && {category: selectedCategory} ),
-            ...(searchQuery && {name: { $regex: searchQuery, $options: 'i' }})
-          }
+
+        const find = {
+          ...(selectedCategory !== "all" && { category: selectedCategory }),
+          ...(searchQuery && { name: { $regex: searchQuery, $options: 'i' } })
+        }
 
         const result = (await getProducts(
           find,
-          sortOptions.find(({value})=> value === sortBy)?.sort as {[key: string]: SortDirection}
+          sortOptions.find(({ value }) => value === sortBy)?.sort as { [key: string]: SortDirection }
         ))
 
-          if (!result) {
-            throw new Error('Failed to load the database');
-          }
-          // const { results: products } = await response.json();
-    
-          setProducts(result || []);
+        if (!result) {
+          throw new Error('Failed to load the database');
+        }
+        // const { results: products } = await response.json();
+
+        setProducts(result || []);
       } catch (error) {
         console.error(error)
         setError(error as string)
@@ -78,6 +91,9 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
     // Search is applied in real-time with state
     setIsLoading(true)
   };
+
+  console.log("category", selectedCategory, categoryParams)
+
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
@@ -102,7 +118,7 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
             <button
               type="button"
               onClick={() => {
-                setSelectedCategory("All");
+                setSelectedCategory("all");
                 setSearchQuery("");
               }}
               className="bg-gray-200 dark:bg-gray-700 px-4 py-3 rounded-r-lg flex items-center text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
@@ -119,16 +135,16 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Categories</h2>
               <div className="space-y-2">
-                {categories.map((category) => (
-                  <label key={category} className="flex items-center">
+                {categories.map(({ name, value }) => (
+                  <label key={value} className="flex items-center">
                     <input
                       type="radio"
                       name="category"
-                      checked={selectedCategory === category}
-                      onChange={() => setSelectedCategory(category)}
+                      checked={selectedCategory === value}
+                      onChange={() => setSelectedCategory(value)}
                       className="h-4 w-4 text-primary focus:ring-primary border-gray-300"
                     />
-                    <span className="ml-2 text-gray-700 dark:text-gray-300">{category}</span>
+                    <span className="ml-2 text-gray-700 dark:text-gray-300">{name}</span>
                   </label>
                 ))}
               </div>
@@ -151,7 +167,7 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
               <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <button
                   onClick={() => {
-                    setSelectedCategory("All");
+                    setSelectedCategory("all");
                     setSearchQuery("");
                     setSortBy("relevance");
                   }}
@@ -166,15 +182,9 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
           {/* Product listing */}
           <div className="lg:w-3/4">
             {isLoading ? (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
-                <Image
-                  src="https://images.unsplash.com/photo-1580169980114-ccd0babfa840?q=80&w=2070"
-                  alt="Loading products"
-                  width={200}
-                  height={200}
-                  className="mx-auto mb-4 rounded-full object-cover"
-                />
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Loading products...</h2>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex justify-center">
+                <LogoLoading />
+
               </div>
             ) : error ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
@@ -187,7 +197,7 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
                 />
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">{error}</h2>
               </div>
-            ) : products?.length === 0 ? (
+            ) : (!initialProducts || !products?.length) ? (
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
                 <Image
                   src="https://images.unsplash.com/photo-1580169980114-ccd0babfa840?q=80&w=2070"
@@ -202,7 +212,7 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
                 </p>
                 <button
                   onClick={() => {
-                    setSelectedCategory("All");
+                    setSelectedCategory("all");
                     setSearchQuery("");
                   }}
                   className="inline-flex items-center px-4 py-2 bg-primary hover:bg-primary-dark text-white rounded-lg transition-colors"
@@ -219,7 +229,7 @@ const ProductsRendering = ({initialProducts}: { initialProducts: Product[] }) =>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {products?.map((product) => (
-                    <ProductCard key={product?._id as string} product={{...product, _id: product._id.toString()}} />
+                    <ProductCard key={product?._id as string} product={{ ...product, _id: product._id.toString() }} />
                   ))}
                 </div>
               </>

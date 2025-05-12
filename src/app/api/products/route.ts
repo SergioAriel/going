@@ -1,6 +1,6 @@
-import { UserData } from '@/interfaces';
+import { User } from '@/interfaces';
 import client from '@/lib/mongodb';
-import { getProducts } from '@/lib/products';
+import { getProducts } from '@/lib/ServerActions/products';
 import { v2 as cloudinary } from "cloudinary";
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -10,7 +10,7 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const GET = async () => {
+export const GET = async (_: Request) => {
     try {
         const products = await getProducts()
         return NextResponse.json({ results: products }, { status: 200 });
@@ -49,7 +49,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     }
 
     const productDb = {
-        userID: data.get("userID") as string,
+        seller: data.get("seller") as string,
         name: data.get("name") as string,
         description: data.get("description") as string,
         category: data.get("category") as string,
@@ -82,8 +82,8 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
 
     //udate user
     
-    await db.collection<UserData>("users").updateOne(
-        { _id: productDb.userID  },
+    await db.collection<User>("users").updateOne(
+        { _id: productDb.seller  },
         { $push: { products: product.insertedId }}
     );
     console.log("Product added successfully:", product);

@@ -15,6 +15,8 @@ import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey, cl
 import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAlert } from "@/context/alert";
+import { uploadOrder } from "@/lib/ServerActions/orders";
+import { CartItem } from "@/interfaces";
 
 interface AddressForm {
   fullName: string;
@@ -111,23 +113,26 @@ const CheckoutPage = () => {
 
 
   // Function to complete the checkout process
-  const completeCheckout = async (signature: string, sellers: { [seller: string]: { address: string, totalAmount: number, currency: string, itemId: string, price: number } }) => {
+  const completeCheckout = async (signature: string) => {
+    if (!user) {
+      handleAlert({
+        message: "You need to be logged in to complete the purchase",
+        isError: true
+      })
+      return
+    }
     setLoading(true);
     setPaymentStage("confirmed")
     try {
-      const createOrder = await fetch("/api/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          buyer: user?.id,
-          sellers,
-          signature,
-        })
-      });
 
-      const { orderID } = await createOrder.json()
+      
+      const orderID = await uploadOrder({
+        buyerID: user?.id,
+        signature,
+        sellers: [ ...(new Set(items.map((item: CartItem) => item.seller)))],
+        items: items.map((item: CartItem) => ({_id: item._id, price: item.price, quantity: item.quantity }))
+      })
+
 
       setOrderNumber(orderID);
 
@@ -167,59 +172,63 @@ const CheckoutPage = () => {
       setPaymentError(true)
       return;
     }
-    const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
-    const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
-    const objectPayments = items.reduce((acc: { [_: string]: { address: string, totalAmount: number, currency: string, itemId: string, price: number } }, item) => {
-      const { addressWallet, price, quantity, currency, seller, _id } = item;
-      return {
-        ...acc,
-        [seller]: {
-          itemId: _id,
-          address: addressWallet,
-          price,
-          totalAmount: acc[addressWallet] ? acc[addressWallet].totalAmount + (price * quantity) : (price * quantity),
-          currency,
-        }
-      }
-    }, {});
-
-    const transaction = new Transaction();
-    const transferInstructions = await Promise.all(
-      Object.entries(objectPayments).map(async ([_, { address, totalAmount, currency }]) => {
-        const solanaPrice = await getSolanaPrice(currency);
-        return SystemProgram.transfer({
-          fromPubkey: new PublicKey(wallet.address),
-          toPubkey: new PublicKey(address),
-          lamports: Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
-        });
-      })
-    );
-
-    transferInstructions.forEach(instruction => {
-      transaction.add(instruction);
-    });
-    transaction.recentBlockhash = recentBlockhash;
-
-
-    transaction.feePayer = new PublicKey(wallet.address);
-
     try {
-
+      const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+      const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
+      const objectPayments = items.reduce((acc: { [_: string]: { totalAmount: number, currency: string, price: number } }, item) => {
+        const { addressWallet, price, quantity, currency } = item;
+        return {
+          ...acc,
+          [addressWallet]: {
+            price,
+            totalAmount: acc[addressWallet] ? acc[addressWallet].totalAmount + (price * quantity) : (price * quantity),
+            currency,
+          }
+        }
+      }, {});
+  
+      const transaction = new Transaction();
+      const transferInstructions = await Promise.all(
+        Object.entries(objectPayments).map(async ([address, { totalAmount, currency }]) => {
+          const solanaPrice = await getSolanaPrice(currency);
+          return SystemProgram.transfer({
+            fromPubkey: new PublicKey(wallet.address),
+            toPubkey: new PublicKey(address),
+            lamports: Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
+          });
+        })
+      );
+  
+      transferInstructions.forEach(instruction => {
+        transaction.add(instruction);
+      });
+      transaction.recentBlockhash = recentBlockhash;
+  
+  
+      transaction.feePayer = new PublicKey(wallet.address);
       const transactionReceipt = await sendTransaction({
         transaction,
         connection
       });
       setPaymentStage("confirmed");
       if (transactionReceipt) {
-        completeCheckout(transactionReceipt.signature, objectPayments);
+        completeCheckout(transactionReceipt.signature);
         return;
       }
-    } catch (_) {
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      setPaymentError(true)
       handleAlert({
-        message: "There was an error completing your purchase. Please try again.",
+        message: "Error processing payment",
         isError: true
       })
-      setPaymentError(true);
+      setLoading(false)
+      setPaymentStage("initial")
+      setTimeout(() => {
+        setPaymentError(false)
+      }
+        , 1000)
+      return; 
     }
   };
 
