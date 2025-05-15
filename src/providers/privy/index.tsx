@@ -6,8 +6,8 @@ import {toSolanaWalletConnectors} from "@privy-io/react-auth/solana";
 export function PrivyProvider({ children }: { children: React.ReactNode }) {
     return (
         <Privy
-            appId="cm98xfs1400p8jr0ko4qbl24q"
-            clientId="client-WY5ijmFzEhrnzEojw1udsczNP1Rob52q5NX7CHFsRGX2k"
+            appId={process.env.NEXT_PUBLIC_PRIVY_APP_ID as string}
+            clientId={process.env.NEXT_PUBLIC_PRIVY_CLIENT_ID as string}
             config={{
                 solanaClusters: [{name: 'devnet', rpcUrl: 'https://api.devnet.solana.com'}],
                 // Customize Privy's appearance in your app

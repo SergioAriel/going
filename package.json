@@ -27,6 +27,7 @@
     "next-auth": "^4.24.11",
     "next-cloudinary": "^6.16.0",
     "next-i18next": "^15.4.2",
+    "next-theme": "^0.1.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.55.0",

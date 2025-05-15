@@ -5,10 +5,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { XMarkIcon, MinusIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
 const CartPage = () => {
-  const { items, removeFromCart, updateQuantity, getTotalItems, getTotalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotalItems, totalPrice } = useCart();
   const [couponCode, setCouponCode] = useState("");
+  const { listCurrencies, userCurrency } = useCurrencies();
 
   // Check if cart is empty
   if (items.length === 0) {
@@ -16,7 +18,7 @@ const CartPage = () => {
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-16">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Your Cart</h1>
-          
+
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
             <div className="text-gray-400 dark:text-gray-500 text-6xl mb-4">🛒</div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Your cart is empty</h2>
@@ -32,16 +34,11 @@ const CartPage = () => {
     );
   }
 
-  // Calculate shipping cost (free over $100)
-  const subtotal = getTotalPrice();
-  const shippingCost = subtotal >= 100 ? 0 : 10;
-  const total = subtotal + shippingCost;
-
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
       <div className="container mx-auto px-4">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Your Cart</h1>
-        
+
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Cart items */}
           <div className="lg:w-2/3">
@@ -52,83 +49,89 @@ const CartPage = () => {
                 <div className="text-center">Quantity</div>
                 <div className="text-right">Total</div>
               </div>
-              
+
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {items.map((item) => (
-                  <div key={item._id} className="p-4 md:grid md:grid-cols-6 md:items-center">
-                    {/* Product info */}
-                    <div className="flex items-center md:col-span-3 mb-4 md:mb-0">
-                      <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
-                        <Image
-                          src={item.mainImage}
-                          alt={item.name}
-                          fill
-                          className="object-cover"
-                        />
+                {items.map((item) => {
+                  const priceCurrencyUSD = listCurrencies.find((currency) => currency.symbol === item.currency);
+
+                  console.log(priceCurrencyUSD, item.currency, item.price, userCurrency.price);
+
+                  return (
+                    <div key={item._id} className="p-4 md:grid md:grid-cols-6 md:items-center">
+                      {/* Product info */}
+                      <div className="flex items-center md:col-span-3 mb-4 md:mb-0">
+                        <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
+                          <Image
+                            src={item.mainImage}
+                            alt={item.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="ml-4 flex-1">
+                          <h3 className="text-base font-medium text-gray-900 dark:text-white">
+                            <Link href={`/products/${item._id}`} className="hover:text-primary">
+                              {item.name}
+                            </Link>
+                          </h3>
+                          <button
+                            type="button"
+                            onClick={() => removeFromCart(item._id)}
+                            className="mt-1 text-sm font-medium text-primary hover:text-primary-dark flex items-center"
+                          >
+                            <XMarkIcon className="h-4 w-4 mr-1" />
+                            Remove
+                          </button>
+                        </div>
                       </div>
-                      <div className="ml-4 flex-1">
-                        <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                          <Link href={`/products/${item._id}`} className="hover:text-primary">
-                            {item.name}
-                          </Link>
-                        </h3>
-                        <button
-                          type="button"
-                          onClick={() => removeFromCart(item._id)}
-                          className="mt-1 text-sm font-medium text-primary hover:text-primary-dark flex items-center"
-                        >
-                          <XMarkIcon className="h-4 w-4 mr-1" />
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Price */}
-                    <div className="md:text-center mb-4 md:mb-0">
-                      <span className="text-sm font-medium text-gray-900 dark:text-white">
-                        ${item.price.toFixed(2)}
-                      </span>
-                    </div>
-                    
-                    {/* Quantity */}
-                    <div className="md:text-center mb-4 md:mb-0">
-                      <div className="inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                          className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <MinusIcon className="h-4 w-4" />
-                        </button>
-                        <span className="w-10 text-center text-gray-900 dark:text-white">
-                          {item.quantity}
+
+                      {/* Price */}
+                      <div className="flex flex-col md:text-center mb-4 md:mb-0">
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {userCurrency?.currency} {((item.price * (priceCurrencyUSD?.price || 0)) / userCurrency.price ).toFixed(2)}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                          className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
-                        >
-                          <PlusIcon className="h-4 w-4" />
-                        </button>
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="md:text-center mb-4 md:mb-0">
+                        <div className="inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                            className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <MinusIcon className="h-4 w-4" />
+                          </button>
+                          <span className="w-10 text-center text-gray-900 dark:text-white">
+                            {item.quantity}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                            className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
+                          >
+                            <PlusIcon className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Total */}
+                      <div className="md:text-right">
+                        <span className="text-base font-medium text-gray-900 dark:text-white">
+                          {userCurrency?.currency} {((item.price * item.quantity * (priceCurrencyUSD?.price || 0)) / userCurrency.price).toFixed(2)}
+                        </span>
                       </div>
                     </div>
-                    
-                    {/* Total */}
-                    <div className="md:text-right">
-                      <span className="text-base font-medium text-gray-900 dark:text-white">
-                        ${(item.price * item.quantity).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
-            
+
             <div className="mt-6 flex justify-between">
               <Link href="/products" className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
                 Continue Shopping
               </Link>
-              
+
               <button
                 type="button"
                 onClick={() => {
@@ -142,25 +145,25 @@ const CartPage = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Order summary */}
           <div className="lg:w-1/3">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-6">Order Summary</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal ({getTotalItems()} items)</span>
-                  <span className="text-gray-900 dark:text-white font-medium">${subtotal.toFixed(2)}</span>
+                  {/* <span className="text-gray-900 dark:text-white font-medium">${subtotal.toFixed(2)}</span> */}
                 </div>
-                
-                <div className="flex justify-between">
+
+                {/* <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Shipping</span>
                   <span className="text-gray-900 dark:text-white font-medium">
                     {shippingCost === 0 ? "Free" : `$${shippingCost.toFixed(2)}`}
                   </span>
-                </div>
-                
+                </div> */}
+
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600 dark:text-gray-400">Discount Code</span>
@@ -181,18 +184,18 @@ const CartPage = () => {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">Total</span>
-                    <span className="text-lg font-bold text-primary">${total.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-primary">${totalPrice.toFixed(2)}</span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Including taxes and fees
                   </p>
                 </div>
               </div>
-              
+
               <div className="mt-6">
                 <Link
                   href="/checkout"

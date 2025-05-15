@@ -11,7 +11,7 @@ export default async function Home() {
   const dbFeaturedProducts = await getProducts({ isFeatured: true })
 
   return (
-    <main className="min-h-screen">
+    <>
       {/* Hero Section with Slider */}
       <HeroSlider />
       {/* Featured Products */}
@@ -137,6 +137,6 @@ export default async function Home() {
           </div>
         </div>
       </section> */}
-    </main>
+    </>
   );
 }

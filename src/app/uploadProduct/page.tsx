@@ -1,6 +1,6 @@
 "use client";
 
-import { DragEvent, useState } from "react";
+import { DragEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   PhotoIcon,
@@ -12,7 +12,7 @@ import {
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
 import { CreateProduct } from "@/interfaces";
-import { useAlert } from "@/context/alert";
+import { useAlert } from "@/context/AlertContext";
 
 
 const UploadProduct = () => {
@@ -23,7 +23,7 @@ const UploadProduct = () => {
     description: "",
     category: "",
     price: 0,
-    currency: "USD",
+    currency: "",
     stock: 0,
     location: "",
     condition: "",
@@ -33,11 +33,12 @@ const UploadProduct = () => {
     addressWallet: "",
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [listCryptocurrencies, setListCryptocurrencies] = useState<{ symbol: string; name: string; price: number }[]>([]);
 
   const { handleAlert } = useAlert()
 
   const categories = [
-    {name:"Electronics", value:"electronics"},
+    { name: "Electronics", value: "electronics" },
     { name: "Clothing and Accessories", value: "clothing" },
     { name: "Home and Garden", value: "home" },
     { name: "Sports", value: "sports" },
@@ -48,17 +49,18 @@ const UploadProduct = () => {
     { name: "Other", value: "other" },
   ];
 
-  const currencies = [
-    { value: "USD", label: "USD - United States Dollar" },
-    { value: "EUR", label: "EUR - Euro" },
-    { value: "ARS", label: "ARS - Argentinian Peso" },
-    { value: "SOL", label: "SOL - Solana" },
-  ];
+  useEffect(() => {
+    (async () => {
+      const list = await (await fetch("/api/cryptocurrencies")).json()
+      setListCryptocurrencies(list)
+    })()
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === "stock" || name === "price") {
-      setInfoProduct(prev => ({ ...prev, [name]: parseFloat(value) }));
+      console.log(value)
+      setInfoProduct(prev => ({ ...prev, [name]: Math.round(parseFloat(value)) || 0 }));
       return
     }
     if (name === "tags") {
@@ -121,7 +123,6 @@ const UploadProduct = () => {
     const requiredFields = ["name", "description", "category", "price", "currency", "images"];
     const isValid = requiredFields.every(field => infoProduct[field as keyof typeof infoProduct] !== "");
 
-
     if (!isValid) {
       handleAlert({
         message: "Please fill in all required fields.",
@@ -140,7 +141,7 @@ const UploadProduct = () => {
       isError: false
     })
 
-  };
+  };  
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-10">
@@ -208,7 +209,7 @@ const UploadProduct = () => {
                         required
                       >
                         <option value="" disabled>Select a category</option>
-                        {categories.map(({name, value}) => (
+                        {categories.map(({ name, value }) => (
                           <option key={value} value={value}>{name}</option>
                         ))}
                       </select>
@@ -340,13 +341,8 @@ const UploadProduct = () => {
                           }
                         })
                     }
-
-
                   </select>
                 </div>
-
-
-
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -360,7 +356,7 @@ const UploadProduct = () => {
                           step="0.01"
                           id="price"
                           name="price"
-                          value={infoProduct.price}
+                          value={infoProduct.price.toString()}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           placeholder="0.00"
@@ -382,14 +378,24 @@ const UploadProduct = () => {
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white appearance-none"
                           required
                         >
-                          {currencies.map((currency) => (
-                            <option key={currency.value} value={currency.value}>{currency.label}</option>
+                          <option value="" disabled>Select a currency</option>
+                          {listCryptocurrencies.map((crypto) => (
+                            <option key={crypto.symbol} value={crypto.symbol}>{`${crypto.name} - ${crypto.symbol}`}</option>
                           ))}
                         </select>
                         <ChevronDownIcon className="h-5 w-5 text-gray-400 absolute right-3 top-3 pointer-events-none" />
                       </div>
                     </div>
                   </div>
+                  <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                    {
+                      infoProduct.price * (listCryptocurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
+                    } USD
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    The price is the amount you will receive after the sale. Make sure to set a competitive price.
+                  </p>
                 </div>
               </div>
 

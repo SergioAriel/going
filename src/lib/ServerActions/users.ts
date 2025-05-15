@@ -10,7 +10,7 @@ export const getUser = async(_id: string): Promise<User | null>  => {
         .findOne<User>({ '_id': _id });
 }
 
-export const updateUser = async(user: User) => {
+export const updateUser = async(user: Partial<User> & { _id: string }) => {
     const db = client.db("going");
     try {
         const updatedUser = await db.collection<User>("users").updateOne(
@@ -18,7 +18,7 @@ export const updateUser = async(user: User) => {
             { $set: { ...user } }
         );
         console.log("User updated in database:", updatedUser);
-        return {status: true, user: updatedUser};
+        return {status: true};
     } catch (error) {
         return {status: false, error: error};
     }

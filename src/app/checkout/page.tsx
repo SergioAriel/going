@@ -14,24 +14,14 @@ import {
 import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
-import { useAlert } from "@/context/alert";
-import { uploadOrder } from "@/lib/ServerActions/orders";
-import { CartItem } from "@/interfaces";
-
-interface AddressForm {
-  fullName: string;
-  street: string;
-  city: string;
-  state: string;
-  zip: string;
-  country: string;
-  phone: string;
-}
+import { useAlert } from "@/context/AlertContext";
+import { updateOrder } from "@/lib/ServerActions/orders";
+import { AddressForm, CartItem } from "@/interfaces";
 
 const CheckoutPage = () => {
   const router = useRouter();
   const { user } = usePrivy();
-  const { items, getTotalItems, getTotalPrice, clearCart } = useCart();
+  const { items, getTotalItems, totalPrice, clearCart } = useCart();
   const { wallets } = useSolanaWallets();
   const { sendTransaction } = useSendTransaction();
   const [step, setStep] = useState(1);
@@ -43,7 +33,8 @@ const CheckoutPage = () => {
     state: "",
     zip: "",
     country: "",
-    phone: ""
+    phone: "",
+    email: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -56,12 +47,6 @@ const CheckoutPage = () => {
   const [paymentStage, setPaymentStage] = useState("initial"); // initial, processing, confirmed
   const [paymentError, setPaymentError] = useState(false);
   // const [transactionId, setTransactionId] = useState("");
-
-  // Example - Calculate costs
-  const subtotal = getTotalPrice();
-  const shipping = subtotal >= 100 ? 0 : 10;
-  const taxes = Math.round(subtotal * 0.16 * 100) / 100; // 16% VAT
-  const total = subtotal + shipping + taxes;
 
   // Check if the cart is empty
   useEffect(() => {
@@ -113,7 +98,7 @@ const CheckoutPage = () => {
 
 
   // Function to complete the checkout process
-  const completeCheckout = async (signature: string) => {
+  const completeCheckout = async (signature: string, orderId: string) => {
     if (!user) {
       handleAlert({
         message: "You need to be logged in to complete the purchase",
@@ -124,24 +109,14 @@ const CheckoutPage = () => {
     setLoading(true);
     setPaymentStage("confirmed")
     try {
-
-      
-      const orderID = await uploadOrder({
-        buyerID: user?.id,
-        signature,
-        sellers: [ ...(new Set(items.map((item: CartItem) => item.seller)))],
-        items: items.map((item: CartItem) => ({_id: item._id, price: item.price, quantity: item.quantity }))
+      await updateOrder({
+        _id: orderId,
+        signature
       })
-
-
-      setOrderNumber(orderID);
-
+      setOrderNumber(orderId);
       clearCart();
       setOrderCompleted(true);
       setStep(3);
-
-
-
     } catch (error) {
       console.error("Error completing purchase:", error);
     } finally {
@@ -151,9 +126,16 @@ const CheckoutPage = () => {
 
   // Function to handle payment form submission
   const handleSubmitPayment = async (e: React.FormEvent) => {
-    setLoading(true)
     e.preventDefault();
+    if (!user) {
+      handleAlert({
+        message: "You need to be logged in to complete the purchase",
+        isError: true
+      })
+      return
+    }
 
+    setLoading(true)
     if (!selectedPayment) {
       handleAlert({
         message: "Wallet not selected",
@@ -172,7 +154,24 @@ const CheckoutPage = () => {
       setPaymentError(true)
       return;
     }
+
     try {
+      const orderId = await (await fetch("/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          date: new Date(),
+          buyerId: user?.id,
+          encryptedAddress: address,
+          status: "processing",
+          totalPrice,
+          sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
+          items: items.map((item: CartItem) => ({ _id: item._id, price: item.price, quantity: item.quantity, name: item.name, image: item.mainImage, currency: item.currency }))
+        })
+      })).json();
+
       const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
       const { blockhash: recentBlockhash } = await connection.getLatestBlockhash();
       const objectPayments = items.reduce((acc: { [_: string]: { totalAmount: number, currency: string, price: number } }, item) => {
@@ -186,7 +185,7 @@ const CheckoutPage = () => {
           }
         }
       }, {});
-  
+
       const transaction = new Transaction();
       const transferInstructions = await Promise.all(
         Object.entries(objectPayments).map(async ([address, { totalAmount, currency }]) => {
@@ -198,21 +197,22 @@ const CheckoutPage = () => {
           });
         })
       );
-  
+
       transferInstructions.forEach(instruction => {
         transaction.add(instruction);
       });
       transaction.recentBlockhash = recentBlockhash;
-  
-  
+
       transaction.feePayer = new PublicKey(wallet.address);
       const transactionReceipt = await sendTransaction({
         transaction,
         connection
       });
+
       setPaymentStage("confirmed");
+      
       if (transactionReceipt) {
-        completeCheckout(transactionReceipt.signature);
+        completeCheckout(transactionReceipt.signature, orderId);
         return;
       }
     } catch (error) {
@@ -228,7 +228,7 @@ const CheckoutPage = () => {
         setPaymentError(false)
       }
         , 1000)
-      return; 
+      return;
     }
   };
 
@@ -450,6 +450,20 @@ const CheckoutPage = () => {
                             className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           />
                         </div>
+                        <div className="md:col-span-2">
+                          <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Contact Email
+                          </label>
+                          <input
+                            id="email"
+                            name="email"
+                            type="email"
+                            required
+                            value={address.email}
+                            onChange={handleAddressChange}
+                            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                          />
+                        </div>
                       </div>
 
                       <div className="mt-8 flex justify-between">
@@ -486,10 +500,10 @@ const CheckoutPage = () => {
 
                         {
                           wallets
-                          // user?.linkedAccounts?
-                          .map((wallet) => {
-                            
-                            // if (wallet.type === "wallet") {
+                            // user?.linkedAccounts?
+                            .map((wallet) => {
+
+                              // if (wallet.type === "wallet") {
                               return (
 
                                 <div key={wallet.address} className="flex items-center mb-4">
@@ -516,8 +530,8 @@ const CheckoutPage = () => {
                                   </label>
                                 </div>
                               )
-                            // }
-                          })
+                              // }
+                            })
                         }
                       </div>
                       <div className="flex items-start mt-6">
@@ -610,23 +624,13 @@ const CheckoutPage = () => {
 
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
-                      <span className="text-gray-900 dark:text-white">${subtotal.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600 dark:text-gray-400">Shipping</span>
-                      <span className="text-gray-900 dark:text-white">
-                        {shipping === 0 ? "Free" : `$${shipping.toFixed(2)}`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
                       <span className="text-gray-600 dark:text-gray-400">Taxes</span>
-                      <span className="text-gray-900 dark:text-white">${taxes.toFixed(2)}</span>
+                      <span className="text-gray-900 dark:text-white">${0}</span>
                     </div>
                     <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
-                        <span className="text-lg font-semibold text-primary">${total.toFixed(2)}</span>
+                        <span className="text-lg font-semibold text-primary">${totalPrice.toFixed(2)}</span>
                       </div>
                     </div>
                   </div>

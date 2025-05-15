@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 export interface User {
   _id: string;
   name: string;
-  addresses: Array<Addresses>;
+  addresses: Addresses[];
   email: string;
   avatar: string;
   joined: string;
@@ -16,6 +16,11 @@ export interface User {
   telegram: string;
   facebook: string;
   isSeller: boolean
+  settings: {
+    theme: "light" | "dark" | "system";
+    currency: string;
+    lenguage: string;
+  }
 }
 export interface Addresses {
   name: string;
@@ -80,6 +85,37 @@ export interface CartItem {
   currency: string;
   isOffer?: boolean;
   offerPercentage?: number;
+  priceOffer?: number;
+}
+
+export interface Order {
+  _id: string;
+  date: Date;
+  status: string;
+  buyerId: string;
+  encryptedAddress: AddressForm;
+  sellers: string[];
+  signature: string;
+  totalPrice: number;
+  items: {
+    _id: string;
+    price: number;
+    quantity: number;
+    name: string;
+    image: string;
+    currency: string;
+  }[];
+}
+
+export interface AddressForm {
+  fullName: string;
+  street: string;
+  city: string;
+  state: string;
+  zip: string;
+  country: string;
+  phone: string;
+  email: string;
 }
 
 export interface Reviews {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import ProductDetail from "@/components/pages/products/product";
+import ProductDetail from "@/app/products/[_id]";
 import { getOneProduct } from "@/lib/ServerActions/products";
 import { getUser } from "@/lib/ServerActions/users";
 
@@ -30,10 +30,6 @@ const ProductDetailPage = async ({ params }: { params: Promise<{ _id: string }> 
   return (
     <ProductDetail product={product} seller={seller} />
   );
-
-
-
-
 };
 
 export default ProductDetailPage;

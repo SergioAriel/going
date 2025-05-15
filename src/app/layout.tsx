@@ -6,7 +6,9 @@ import Footer from "@/components/layout/Footer";
 import { CartProvider } from "@/context/CartContext";
 import { PrivyProvider } from "@/providers/privy";
 import { MongoClient } from "mongodb";
-import { AlertProvider } from "@/context/alert";
+import { AlertProvider } from "@/context/AlertContext";
+import { UserProvider } from "@/context/UserContext";
+import { CurrenciesProvider } from "@/context/CurrenciesContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,15 +77,19 @@ export default async function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <PrivyProvider>
-            <AlertProvider>
-              <CartProvider>
-                <Header />
-                <main className="flex-grow">
-                  {children}
-                </main>
-                <Footer />
-              </CartProvider>
-            </AlertProvider>
+          <UserProvider>
+            <CurrenciesProvider>
+              <AlertProvider>
+                <CartProvider>
+                  <Header />
+                  <main className="flex-grow">
+                    {children}
+                  </main>
+                  <Footer />
+                </CartProvider>
+              </AlertProvider>
+            </CurrenciesProvider>
+          </UserProvider>
         </PrivyProvider>
       </body>
     </html >

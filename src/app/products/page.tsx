@@ -1,8 +1,9 @@
-import ProductsRendering from "@/components/pages/products";
+
 import LogoLoading from "@/components/svgs/LogoLoading";
 import { Product } from "@/interfaces";
 import { getProducts } from "@/lib/ServerActions/products";
 import { Suspense } from "react";
+import ProductsRendering from ".";
 
 
 const ProductsPage = async (params: Promise<{ category: string }>) => {

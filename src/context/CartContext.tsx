@@ -1,8 +1,8 @@
 "use client";
 
 import { CartItem, Product } from "@/interfaces";
-import React, { createContext, useContext, useState, ReactNode } from "react";
-import { useAlert } from "./alert";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { useAlert } from "./AlertContext";
 
 // Definir tipo de producto para evitar uso de 'any'
 
@@ -13,41 +13,52 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
-  getTotalPrice: () => number;
+  totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
   const { handleAlert } = useAlert();
 
-  const addToCart = (product: Product, quantity: number) => {
-    setItems(prevItems => {
-      const existingItem = prevItems.find(item => item._id === product._id);
-      
-      if (existingItem) {
-        return prevItems.map(item => 
-          item._id === product._id 
-            ? { ...item, quantity: item.quantity + quantity } 
-            : item
-        );
-      } else {
-        return [...prevItems, {
-          _id: product._id,
-          seller: product.seller,
-          name: product.name,
-          price: product.price,
-          priceOffer: product.isOffer && product.offerPercentage ? product.price - (product.price * product.offerPercentage) : false,
-          mainImage: product.mainImage,
-          quantity,
-          addressWallet: product.addressWallet,
-          currency: product.currency || 'USD'
-        }];
-      }
+  useEffect(() => {
+    const storedItems = localStorage.getItem("cart");
+    if (storedItems) {
+      setItems(JSON.parse(storedItems));
+    }
+  }, []);
 
-    });
-    handleAlert({message:`Added to cart: ${product.name}`, isError: false})
+  const addToCart = (product: Product, quantity: number) => {
+    const existingItem = items.find(item => item._id === product._id);
+
+    if (existingItem) {
+      const addItem = items.map(item =>
+        item._id === product._id
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      );
+      localStorage.setItem("cart", JSON.stringify(addItem));
+      setItems(addItem);
+    } else {
+      const addItem = [...items, {
+        _id: product._id.toString(),
+        seller: product.seller,
+        name: product.name,
+        price: product.price,
+        priceOffer: product.isOffer && product.offerPercentage ? product.price - (product.price * product.offerPercentage) : undefined,
+        mainImage: product.mainImage,
+        quantity,
+        addressWallet: product.addressWallet,
+        currency: product.currency
+      }]
+      localStorage.setItem("cart", JSON.stringify(addItem));
+      setItems(addItem);
+    }
+
+
+    handleAlert({ message: `Added to cart: ${product.name}`, isError: false })
   };
 
   const removeFromCart = (productId: string) => {
@@ -75,9 +86,44 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const getTotalPrice = () => {
-    return items.reduce((total, item) => total + item.price * item.quantity, 0);
+  const getSolanaPrice = async (currency: string): Promise<number> => {
+    try {
+      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=${currency}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch Solana price');
+      }
+
+      const data = await response.json();
+      const solanaPrice = data.solana[currency.toLowerCase()];
+
+      console.log(`Current Solana price: $${solanaPrice} ${currency}`);
+      return solanaPrice;
+    } catch (error) {
+      console.error("Error fetching Solana price:", error);
+      return 150; // Default value: 1 SOL = $150 USD
+    }
   };
+
+  const getTotalPrice = async () => {
+
+    return await items.reduce(async (acc, item) => {
+      const total = await acc
+      const priceToCurrency = await getSolanaPrice(item.currency);
+
+      return total + (item.price * item.quantity) * priceToCurrency
+    }, Promise.resolve(0));
+  };
+
+  useEffect(() => {
+    const calculateTotalPrice = async () => {
+      const total = await getTotalPrice();
+      setTotalPrice(total);
+    };
+
+    calculateTotalPrice();
+  }, [items]);
+
 
   return (
     <CartContext.Provider value={{
@@ -87,7 +133,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       updateQuantity,
       clearCart,
       getTotalItems,
-      getTotalPrice
+      totalPrice
     }}>
       {children}
     </CartContext.Provider>
