@@ -67,6 +67,7 @@ const CheckoutPage = () => {
       }
 
       const data = await response.json();
+      console.log("data", data)
       const solanaPrice = data.solana[currency.toLowerCase()];
 
       console.log(`Current Solana price: $${solanaPrice} ${currency}`);
@@ -187,15 +188,18 @@ const CheckoutPage = () => {
           }
         }
       }, {});
-
+      console.log(items)
       const transaction = new Transaction();
       const transferInstructions = await Promise.all(
         Object.entries(objectPayments).map(async ([address, { totalAmount, currency }]) => {
+          console.log(currency)
           const solanaPrice = await getSolanaPrice(currency);
+          console.log("solanaPrice", solanaPrice)
           return SystemProgram.transfer({
             fromPubkey: new PublicKey(wallet.address),
             toPubkey: new PublicKey(address),
-            lamports: Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
+            lamports: totalAmount * LAMPORTS_PER_SOL,
+            // Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
           });
         })
       );
@@ -243,6 +247,8 @@ const CheckoutPage = () => {
       }, 1000)
     }
   }, [loading, paymentError, paymentStage])
+
+  console.log(items)
 
   if (orderCompleted) {
     return (
