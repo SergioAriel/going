@@ -198,7 +198,7 @@ const CheckoutPage = () => {
           return SystemProgram.transfer({
             fromPubkey: new PublicKey(wallet.address),
             toPubkey: new PublicKey(address),
-            lamports: totalAmount * LAMPORTS_PER_SOL,
+            lamports: 1,
             // Math.round((totalAmount / solanaPrice) * LAMPORTS_PER_SOL),
           });
         })
