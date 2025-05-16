@@ -13,14 +13,14 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
-  totalPrice: number;
+  // totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [totalPrice, setTotalPrice] = useState<number>(0);
+  // const [totalPrice, setTotalPrice] = useState<number>(0);
   const { handleAlert } = useAlert();
 
   useEffect(() => {
@@ -86,43 +86,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  const getSolanaPrice = async (currency: string): Promise<number> => {
-    try {
-      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=${currency}`);
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch Solana price');
-      }
+  // const getTotalPrice = async () => {
 
-      const data = await response.json();
-      const solanaPrice = data.solana[currency.toLowerCase()];
+  //   return await items.reduce(async (acc, item) => {
+  //     const total = await acc
+  //     const priceToCurrency = await getSolanaPrice(item.currency);
 
-      console.log(`Current Solana price: $${solanaPrice} ${currency}`);
-      return solanaPrice;
-    } catch (error) {
-      console.error("Error fetching Solana price:", error);
-      return 150; // Default value: 1 SOL = $150 USD
-    }
-  };
+  //     return total + (item.price * item.quantity) * priceToCurrency
+  //   }, Promise.resolve(0));
+  // };
 
-  const getTotalPrice = async () => {
-
-    return await items.reduce(async (acc, item) => {
-      const total = await acc
-      const priceToCurrency = await getSolanaPrice(item.currency);
-
-      return total + (item.price * item.quantity) * priceToCurrency
-    }, Promise.resolve(0));
-  };
-
-  useEffect(() => {
-    const calculateTotalPrice = async () => {
-      const total = await getTotalPrice();
-      setTotalPrice(total);
-    };
-
-    calculateTotalPrice();
-  }, [items]);
+  // useEffect(() => {
+  //   const total = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  // }, [items]);
 
 
   return (
@@ -133,7 +110,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       updateQuantity,
       clearCart,
       getTotalItems,
-      totalPrice
+      // totalPrice
     }}>
       {children}
     </CartContext.Provider>
