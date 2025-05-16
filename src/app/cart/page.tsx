@@ -5,12 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { XMarkIcon, MinusIcon, PlusIcon } from "@heroicons/react/24/outline";
-import { useCurrencies } from "@/context/CurrenciesContext";
 
 const CartPage = () => {
   const { items, removeFromCart, updateQuantity, getTotalItems, totalPrice } = useCart();
   const [couponCode, setCouponCode] = useState("");
-  const { listCurrencies, userCurrency } = useCurrencies();
 
   // Check if cart is empty
   if (items.length === 0) {
@@ -52,10 +50,6 @@ const CartPage = () => {
 
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {items.map((item) => {
-                  const priceCurrencyUSD = listCurrencies.find((currency) => currency.symbol === item.currency);
-
-                  console.log(priceCurrencyUSD, item.currency, item.price, userCurrency.price);
-
                   return (
                     <div key={item._id} className="p-4 md:grid md:grid-cols-6 md:items-center">
                       {/* Product info */}
@@ -88,7 +82,7 @@ const CartPage = () => {
                       {/* Price */}
                       <div className="flex flex-col md:text-center mb-4 md:mb-0">
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
-                          {userCurrency?.currency} {((item.price * (priceCurrencyUSD?.price || 0)) / userCurrency.price ).toFixed(2)}
+                          {item?.currency} {(item.price || 0).toFixed(2)}
                         </span>
                       </div>
 
@@ -118,7 +112,7 @@ const CartPage = () => {
                       {/* Total */}
                       <div className="md:text-right">
                         <span className="text-base font-medium text-gray-900 dark:text-white">
-                          {userCurrency?.currency} {((item.price * item.quantity * (priceCurrencyUSD?.price || 0)) / userCurrency.price).toFixed(2)}
+                          {item?.currency} {(item.price * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>

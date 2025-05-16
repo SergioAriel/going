@@ -101,7 +101,7 @@ const ProductCard = ({ product }: { product: Product }) => {
               {product.isOffer ? (
                 <div>
                   <span className="text-gray-500 dark:text-gray-400 text-sm line-through">
-                    ${product.price.toFixed(2)}
+                    {product.currency} {product.price.toFixed(2)}
                   </span>
                   <span className="text-lg font-bold text-secondary ml-2">
                     ${product.isOffer && product.offerPercentage ? product.price - (product.price * product.offerPercentage) : false}
@@ -110,7 +110,7 @@ const ProductCard = ({ product }: { product: Product }) => {
                 </div>
               ) : (
                 <span className="text-lg font-bold text-gray-900 dark:text-white">
-                  ${product?.price}
+                  {product.currency} {product?.price}
                 </span>
               )}
             </div>
