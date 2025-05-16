@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-
 export const GET = async () => {
     try {
         const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest`,
