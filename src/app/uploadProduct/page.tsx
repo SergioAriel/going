@@ -379,7 +379,7 @@ const UploadProduct = () => {
                           required
                         >
                           <option value="" disabled>Select a currency</option>
-                          {listCryptocurrencies.map((crypto) => (
+                          {listCryptocurrencies?.map((crypto) => (
                             <option key={crypto.symbol} value={crypto.symbol}>{`${crypto.name} - ${crypto.symbol}`}</option>
                           ))}
                         </select>
