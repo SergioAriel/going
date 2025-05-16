@@ -6,7 +6,7 @@ export const GET = async () => {
         const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest`,
             {
                 headers: {
-                    'X-CMC_PRO_API_KEY': '623367d8-e3be-4290-81c7-7fe33fb839bc',
+                    'X-CMC_PRO_API_KEY': process.env.COINMARKETCAP_API_KEY || "",
                 },
             }
         );
