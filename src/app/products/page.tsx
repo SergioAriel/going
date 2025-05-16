@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import ProductsRendering from ".";
 
 
-const ProductsPage = async (params: Promise<{ category: string }>) => {
+const ProductsPage = async ({params}: {params:Promise<{ category: string }>}) => {
   const { category } = await params
   const products: Promise<Product[]> = getProducts({ category }, { metacritic: -1 });
 

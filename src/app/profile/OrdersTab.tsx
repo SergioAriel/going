@@ -46,7 +46,7 @@ export const OrdersTab = () => {
               </div>
               <div className="mt-2 sm:mt-0 flex items-center">
                 <span className="text-gray-900 dark:text-white font-medium">
-                  ${order.total.toFixed(2)}
+                  ${order.totalPrice.toFixed(2)}
                 </span>
                 <Link href={`/orders/${order._id}`} className="ml-4 text-primary hover:text-primary-dark flex items-center">
                   View Details
