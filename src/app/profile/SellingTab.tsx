@@ -30,7 +30,6 @@ export const SellingTab = () => {
     }, [userData])
   
     const handlerSeller = async () => {
-  
       const resp = await updateUser({
         ...userData,
         isSeller
