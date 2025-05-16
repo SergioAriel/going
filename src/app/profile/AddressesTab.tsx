@@ -29,7 +29,7 @@ export const AddressesTab = () => {
         isError: true
       })
     }
-    if (Object.values(address).some((field) => field !== "")) {
+    if (Object.values(address).some((field) => field === "")) {
       handleAlert({
         message: "Please fill all fields",
         isError: true
