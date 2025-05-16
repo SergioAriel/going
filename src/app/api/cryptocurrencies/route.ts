@@ -19,7 +19,6 @@ export const GET = async () => {
         });
 
         return NextResponse.json(list, { status: 200 });
-
     } catch (error) {
         console.error("Error fetching currency:", error);
         return NextResponse.json({ status: 500, error: "Failed to fetch currency" });

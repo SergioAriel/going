@@ -21,6 +21,7 @@ export const AddressesTab = () => {
   const [selectedEditAddress, setSelectedEditAddress] = useState<number | null>(null);
 
   const handleUser = async (indexAddress: number | null) => {
+    console.log("address", address);
     const fundName = userData?.addresses.find((savedAddress) => savedAddress.name === address.name);
     if (fundName) {
       handleAlert({
@@ -28,7 +29,7 @@ export const AddressesTab = () => {
         isError: true
       })
     }
-    if (Object.values(address).every((field: string) => address[field as keyof typeof address] !== "")) {
+    if (Object.values(address).some((field) => field !== "")) {
       handleAlert({
         message: "Please fill all fields",
         isError: true
