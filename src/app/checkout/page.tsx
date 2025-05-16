@@ -21,7 +21,9 @@ import { AddressForm, CartItem } from "@/interfaces";
 const CheckoutPage = () => {
   const router = useRouter();
   const { user } = usePrivy();
-  const { items, getTotalItems, totalPrice, clearCart } = useCart();
+  const { items, getTotalItems, 
+    // totalPrice,
+     clearCart } = useCart();
   const { wallets } = useSolanaWallets();
   const { sendTransaction } = useSendTransaction();
   const [step, setStep] = useState(1);
@@ -166,7 +168,7 @@ const CheckoutPage = () => {
           buyerId: user?.id,
           encryptedAddress: address,
           status: "processing",
-          totalPrice,
+          // totalPrice,
           sellers: [...(new Set(items.map((item: CartItem) => item.seller)))],
           items: items.map((item: CartItem) => ({ _id: item._id, price: item.price, quantity: item.quantity, name: item.name, image: item.mainImage, currency: item.currency }))
         })
@@ -630,7 +632,10 @@ const CheckoutPage = () => {
                     <div className="pt-3 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex justify-between">
                         <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
-                        <span className="text-lg font-semibold text-primary">${totalPrice.toFixed(2)}</span>
+                        <span className="text-lg font-semibold text-primary">
+                          {/* ${totalPrice.toFixed(2)} */}
+                          34135
+                          </span>
                       </div>
                     </div>
                   </div>
