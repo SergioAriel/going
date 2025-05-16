@@ -7,7 +7,9 @@ import { useCart } from "@/context/CartContext";
 import { XMarkIcon, MinusIcon, PlusIcon } from "@heroicons/react/24/outline";
 
 const CartPage = () => {
-  const { items, removeFromCart, updateQuantity, getTotalItems, totalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotalItems, 
+    // totalPrice
+   } = useCart();
   const [couponCode, setCouponCode] = useState("");
 
   // Check if cart is empty
@@ -182,7 +184,10 @@ const CartPage = () => {
                 <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">Total</span>
-                    <span className="text-lg font-bold text-primary">${totalPrice.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-primary">
+                      {/* ${totalPrice.toFixed(2)} */}
+                      34135
+                      </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Including taxes and fees
