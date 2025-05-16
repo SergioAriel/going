@@ -11,7 +11,9 @@ import {
   WalletIcon,
   ShieldCheckIcon
 } from "@heroicons/react/24/outline";
-import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey, clusterApiUrl } from "@solana/web3.js";
+import { Connection, Transaction, SystemProgram, 
+  // LAMPORTS_PER_SOL,
+   PublicKey, clusterApiUrl } from "@solana/web3.js";
 import { useSendTransaction, useSolanaWallets } from "@privy-io/react-auth/solana";
 import { usePrivy } from "@privy-io/react-auth";
 import { useAlert } from "@/context/AlertContext";
@@ -191,7 +193,9 @@ const CheckoutPage = () => {
       console.log(items)
       const transaction = new Transaction();
       const transferInstructions = await Promise.all(
-        Object.entries(objectPayments).map(async ([address, { totalAmount, currency }]) => {
+        Object.entries(objectPayments).map(async ([address, { 
+          // totalAmount,
+           currency }]) => {
           console.log(currency)
           const solanaPrice = await getSolanaPrice(currency);
           console.log("solanaPrice", solanaPrice)
