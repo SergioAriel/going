@@ -10,11 +10,11 @@ on:
     # Ejecutará en los minutos 0, 5, 10, ..., 55 de cada hora.
     # Las horas y días se basan en UTC.
     - cron: '*/5 * * * *'
-    
+
 jobs:
   update-db:
     runs-on: ubuntu-latest
     steps:
       - name: Llamar al API Endpoint de actualización
         run: |
-          curl -X GET "https://${{ vars.VERCEL_URL }}/api/actualizar-db?secret=${{ secrets.SECRET_API_COINMARKETCAP }}"        # Asegúrate de definir el secreto API_CRON_SECRET en la configuración de Secrets de tu repositorio:
+          curl -X GET "https://${{ env.VERCEL_URL }}/api/actualizar-db?secret=${{ secrets.SECRET_API_COINMARKETCAP }}"        # Asegúrate de definir el secreto API_CRON_SECRET en la configuración de Secrets de tu repositorio:
