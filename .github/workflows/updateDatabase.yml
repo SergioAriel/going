@@ -18,4 +18,4 @@ jobs:
       - name: Llamar al API Endpoint de actualización
  
         run: |
-          curl -X GET "https://${{ vars.URL_GOING }}/api/currencies/auto-update?secret=${{ secrets.API_KEY_COINMARKETCAP }}"
+          curl -X GET "https://${{ vars.URL_GOING }}/api/cryptocurrencies/auto-update?secret=${{ secrets.API_KEY_COINMARKETCAP }}"
