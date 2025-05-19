@@ -16,8 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Llamar al API Endpoint de actualización
-        env:
-
-          URL_GOING: ${{ env.URL_GOING }}
+ 
         run: |
-          curl -X GET "https://${{ env.URL_GOING }}/api/actualizar-db?secret=${{ secrets.API_KEY_COINMARKETCAP }}"
+          curl -X GET "https://${{ vars.URL_GOING }}/api/actualizar-db?secret=${{ secrets.API_KEY_COINMARKETCAP }}"
