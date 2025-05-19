@@ -18,3 +18,6 @@ jobs:
       - name: Llamar al API Endpoint de actualización
         run: |
           curl -X GET "https://${{ env.VERCEL_URL }}/api/actualizar-db?secret=${{ secrets.SECRET_API_COINMARKETCAP }}"        # Asegúrate de definir el secreto API_CRON_SECRET en la configuración de Secrets de tu repositorio:
+        env:
+          # Define este secreto en las configuraciones de tu repositorio de GitHub
+          VERCEL_URL: ${{ env.VERCEL_URL }}
