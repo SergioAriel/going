@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export const GET = async (req: NextRequest) => {
     const { searchParams } = new URL(req.url);
-    const expectedSecret = process.env.CRON_JOB_SECRET;
+    const expectedSecret = process.env.API_KEY_COINMARKETCAP;
     const providedSecret = searchParams.get('secret');
 
     if (!providedSecret || providedSecret !== expectedSecret) {
