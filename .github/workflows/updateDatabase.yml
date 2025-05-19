@@ -1,0 +1,17 @@
+# .github/workflows/actualizar-db.yml
+name: Actualizar Base de Datos
+
+on:
+  schedule:
+    # Esto significa "cada 5 minutos".
+    # Ejecutará en los minutos 0, 5, 10, ..., 55 de cada hora.
+    # Las horas y días se basan en UTC.
+    - cron: '*/5 * * * *'
+
+jobs:
+  update-db:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Llamar al API Endpoint de actualización
+        run: |
+          curl -X GET "https://${{ vars.VERCEL_URL }}/api/actualizar-db?secret=${{ secrets.API_CRON_SECRET }}"        # Asegúrate de definir el secreto API_CRON_SECRET en la configuración de Secrets de tu repositorio:
