@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Llamar al API Endpoint de actualización
         run: |
-          curl -X GET "https://${{ env.URL_GOING }}/api/actualizar-db?secret=${{ secrets.SECRET_API_COINMARKETCAP }}"
+          curl -X GET "https://${{ env.URL_GOING }}/api/actualizar-db?secret=${{ secrets.API_KEY_COINMARKETCAP }}"
         env:
 
-          VERCEL_URL: ${{ env.VERCEL_URL }}
+          URL_GOING: ${{ env.URL_GOING }}
