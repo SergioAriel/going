@@ -1,4 +1,4 @@
-s# .github/workflows/actualizar-db.yml
+# .github/workflows/actualizar-db.yml
 name: Actualizar Base de Datos
 
 on:

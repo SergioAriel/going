@@ -1,7 +1,15 @@
 import client from "@/lib/mongodb";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export const GET = async () => {
+export const GET = async (req: NextRequest) => {
+    const { searchParams } = new URL(req.url);
+    const expectedSecret = process.env.CRON_JOB_SECRET;
+    const providedSecret = searchParams.get('secret');
+
+    if (!providedSecret || providedSecret !== expectedSecret) {
+        return new Response(JSON.stringify({ error: 'Acceso no autorizado' }), { status: 401 });
+    }
+
     try {
         const response = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest`,
             {
