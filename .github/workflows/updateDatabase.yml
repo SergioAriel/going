@@ -2,6 +2,9 @@
 name: Actualizar Base de Datos
 
 on:
+  push:
+    branches:
+      - workflows
   schedule:
     # Esto significa "cada 5 minutos".
     # Ejecutará en los minutos 0, 5, 10, ..., 55 de cada hora.
