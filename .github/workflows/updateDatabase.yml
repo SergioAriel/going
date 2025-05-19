@@ -10,7 +10,7 @@ on:
     # Ejecutará en los minutos 0, 5, 10, ..., 55 de cada hora.
     # Las horas y días se basan en UTC.
     - cron: '*/5 * * * *'
-
+    
 jobs:
   update-db:
     runs-on: ubuntu-latest
