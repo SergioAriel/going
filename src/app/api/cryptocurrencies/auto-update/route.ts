@@ -26,7 +26,7 @@ export const GET = async (req: NextRequest) => {
                 price,
             };
         });
-
+        console.log(list)
         client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
             list,
             createdAt: new Date(),
