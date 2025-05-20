@@ -1,6 +1,8 @@
 import client from "@/lib/mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
+
+
 export const GET = async (req: NextRequest) => {
     const { searchParams } = new URL(req.url);
     const expectedSecret = process.env.API_KEY_COINMARKETCAP;
@@ -26,11 +28,12 @@ export const GET = async (req: NextRequest) => {
                 price,
             };
         });
-        console.log(list);
-        client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
+        
+        const IDCollection = client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
             list,
             createdAt: new Date(),
         });
+        console.log(IDCollection);
 
         return NextResponse.json(list, { status: 200 });
     } catch (error) {
