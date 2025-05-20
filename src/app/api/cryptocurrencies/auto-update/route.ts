@@ -1,7 +1,10 @@
-import client from "@/lib/mongodb";
+import { MongoClient } from "mongodb";
 import { NextRequest, NextResponse } from "next/server";
 
+const uri = process.env.MONGODB_URI;
+const options = {};
 
+let client: MongoClient | null = null;
 
 export const GET = async (req: NextRequest) => {
     const { searchParams } = new URL(req.url);
@@ -28,12 +31,19 @@ export const GET = async (req: NextRequest) => {
                 price,
             };
         });
-        
-        const IDCollection = client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
+
+        try {
+            client = new MongoClient(uri!, options);
+            await client.connect();
+            client.db(process.env.MONGODB_DB); // Intenta acceder a la base de datos
+                    const IDCollection = client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
             list,
             createdAt: new Date(),
         });
         console.log(IDCollection);
+        } catch (e) {
+            console.error("Error al conectar a la base de datos:", e);
+        }
 
         return NextResponse.json(list, { status: 200 });
     } catch (error) {
