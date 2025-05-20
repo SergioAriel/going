@@ -36,11 +36,13 @@ export const GET = async (req: NextRequest) => {
             client = new MongoClient(uri!, options);
             await client.connect();
             client.db(process.env.MONGODB_DB); // Intenta acceder a la base de datos
-                    const IDCollection = await client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
-            list,
-            createdAt: new Date(),
-        });
-        console.log(IDCollection);
+
+            await client.db("cryptocurrencies").collection("cryptocurrencies").drop()
+
+            await client.db("cryptocurrencies").collection("cryptocurrencies").insertOne({
+                list,
+                createdAt: new Date(),
+            });
         } catch (e) {
             console.error("Error al conectar a la base de datos:", e);
         }
