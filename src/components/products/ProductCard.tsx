@@ -39,6 +39,8 @@ const ProductCard = ({ product }: { product: Product }) => {
 
   }
 
+
+
   return (
     <Link href={`/products/${product?._id}`} className="block group">
       <div className="bg-white dark:bg-gray-900 rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
