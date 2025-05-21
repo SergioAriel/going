@@ -60,25 +60,6 @@ const CheckoutPage = () => {
   }, [getTotalItems, router, orderCompleted]);
 
   // Function to get the current price of Solana using the CoinGecko API
-  const getSolanaPrice = async (currency: string): Promise<number> => {
-    try {
-      const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=${currency}`);
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch Solana price');
-      }
-
-      const data = await response.json();
-      console.log("data", data)
-      const solanaPrice = data.solana[currency.toLowerCase()];
-
-      console.log(`Current Solana price: $${solanaPrice} ${currency}`);
-      return solanaPrice;
-    } catch (error) {
-      console.error("Error fetching Solana price:", error);
-      return 150; // Default value: 1 SOL = $150 USD
-    }
-  };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -197,8 +178,6 @@ const CheckoutPage = () => {
           // totalAmount,
            currency }]) => {
           console.log(currency)
-          const solanaPrice = await getSolanaPrice(currency);
-          console.log("solanaPrice", solanaPrice)
           return SystemProgram.transfer({
             fromPubkey: new PublicKey(wallet.address),
             toPubkey: new PublicKey(address),

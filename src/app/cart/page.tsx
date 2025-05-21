@@ -5,11 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { XMarkIcon, MinusIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
 const CartPage = () => {
-  const { items, removeFromCart, updateQuantity, getTotalItems, 
-    // totalPrice
-   } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotalItems,
+    totalPrice
+  } = useCart();
+  const { userCurrency } = useCurrencies()
   const [couponCode, setCouponCode] = useState("");
 
   // Check if cart is empty
@@ -86,6 +88,9 @@ const CartPage = () => {
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {item?.currency} {(item.price || 0).toFixed(2)}
                         </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {userCurrency?.currency || "$"} {(item.convertedPrice || 0).toFixed(2)}
+                        </span>
                       </div>
 
                       {/* Quantity */}
@@ -112,9 +117,12 @@ const CartPage = () => {
                       </div>
 
                       {/* Total */}
-                      <div className="md:text-right">
+                      <div className="flex flex-col md:text-center mb-4 md:mb-0">
                         <span className="text-base font-medium text-gray-900 dark:text-white">
                           {item?.currency} {(item.price * item.quantity).toFixed(2)}
+                        </span>
+                        <span className="text-base font-medium text-gray-900 dark:text-white">
+                          {userCurrency?.currency} {(item.convertedPrice * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -185,9 +193,8 @@ const CartPage = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">Total</span>
                     <span className="text-lg font-bold text-primary">
-                      {/* ${totalPrice.toFixed(2)} */}
-                      34135
-                      </span>
+                      {userCurrency.currency} {totalPrice.toFixed(2)}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Including taxes and fees

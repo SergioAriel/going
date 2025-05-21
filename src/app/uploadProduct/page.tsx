@@ -1,6 +1,6 @@
 "use client";
 
-import { DragEvent, useEffect, useState } from "react";
+import { DragEvent, useState } from "react";
 import Link from "next/link";
 import {
   PhotoIcon,
@@ -13,6 +13,7 @@ import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
 import { CreateProduct } from "@/interfaces";
 import { useAlert } from "@/context/AlertContext";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
 
 const UploadProduct = () => {
@@ -33,7 +34,7 @@ const UploadProduct = () => {
     addressWallet: "",
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [listCryptocurrencies, setListCryptocurrencies] = useState<{ symbol: string; name: string; price: number }[]>([]);
+  const { listCryptoCurrencies } = useCurrencies()
 
   const { handleAlert } = useAlert()
 
@@ -48,13 +49,6 @@ const UploadProduct = () => {
     { name: "Services", value: "services" },
     { name: "Other", value: "other" },
   ];
-
-  useEffect(() => {
-    (async () => {
-      const list = await (await fetch("/api/cryptocurrencies")).json()
-      setListCryptocurrencies(list)
-    })()
-  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -379,7 +373,7 @@ const UploadProduct = () => {
                           required
                         >
                           <option value="" disabled>Select a currency</option>
-                          {listCryptocurrencies?.map((crypto) => (
+                          {listCryptoCurrencies?.map((crypto) => (
                             <option key={crypto.symbol} value={crypto.symbol}>{`${crypto.name} - ${crypto.symbol}`}</option>
                           ))}
                         </select>
@@ -390,7 +384,7 @@ const UploadProduct = () => {
                   <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                     {
-                      infoProduct.price * (listCryptocurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
+                      infoProduct.price * (listCryptoCurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
                     } USD
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">

@@ -3,6 +3,7 @@
 import { CartItem, Product } from "@/interfaces";
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useAlert } from "./AlertContext";
+import { useCurrencies } from "./CurrenciesContext";
 
 // Definir tipo de producto para evitar uso de 'any'
 
@@ -13,15 +14,17 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
-  // totalPrice: number;
+  totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
-  // const [totalPrice, setTotalPrice] = useState<number>(0);
   const { handleAlert } = useAlert();
+  const { userCurrency, listCryptoCurrencies: listCurrencies } = useCurrencies()
+
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
 
   useEffect(() => {
     const storedItems = localStorage.getItem("cart");
@@ -31,6 +34,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const addToCart = (product: Product, quantity: number) => {
+    const priceProductToDollar = listCurrencies.find(currency => currency.symbol === product.currency)
     const existingItem = items.find(item => item._id === product._id);
 
     if (existingItem) {
@@ -42,6 +46,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("cart", JSON.stringify(addItem));
       setItems(addItem);
     } else {
+      const convertedPrice = ( (priceProductToDollar?.price || 0) * product.price ) / userCurrency.price
       const addItem = [...items, {
         _id: product._id.toString(),
         seller: product.seller,
@@ -51,7 +56,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         mainImage: product.mainImage,
         quantity,
         addressWallet: product.addressWallet,
-        currency: product.currency
+        currency: product.currency,
+        convertedPrice
       }]
       localStorage.setItem("cart", JSON.stringify(addItem));
       setItems(addItem);
@@ -86,20 +92,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-
-  // const getTotalPrice = async () => {
-
-  //   return await items.reduce(async (acc, item) => {
-  //     const total = await acc
-  //     const priceToCurrency = await getSolanaPrice(item.currency);
-
-  //     return total + (item.price * item.quantity) * priceToCurrency
-  //   }, Promise.resolve(0));
-  // };
-
-  // useEffect(() => {
-  //   const total = items.reduce((total, item) => total + item.price * item.quantity, 0);
-  // }, [items]);
+  useEffect(() => {
+    
+    const total = items.reduce((total, item) => total + (item.convertedPrice * item.quantity), 0);
+    setTotalPrice(total)
+  }, [items]);
 
 
   return (
@@ -110,7 +107,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       updateQuantity,
       clearCart,
       getTotalItems,
-      // totalPrice
+      totalPrice
     }}>
       {children}
     </CartContext.Provider>

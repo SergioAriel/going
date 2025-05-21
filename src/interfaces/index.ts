@@ -86,6 +86,7 @@ export interface CartItem {
   isOffer?: boolean;
   offerPercentage?: number;
   priceOffer?: number;
+  convertedPrice: number;
 }
 
 export interface Order {
@@ -122,4 +123,11 @@ export interface Reviews {
   _id: string;
   text: string;
   rating: number;
+}
+
+
+export type Currency = {
+	symbol: string,
+	name: string,
+	price: number,
 }
