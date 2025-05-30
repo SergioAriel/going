@@ -1,16 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/context/CartContext";
 import { XMarkIcon, MinusIcon, PlusIcon } from "@heroicons/react/24/outline";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
 const CartPage = () => {
-  const { items, removeFromCart, updateQuantity, getTotalItems, 
-    // totalPrice
-   } = useCart();
+  const { items, removeFromCart, updateQuantity, getTotalItems, clearCart,
+  } = useCart();
+  const { userCurrency } = useCurrencies()
   const [couponCode, setCouponCode] = useState("");
+  const { listCryptoCurrencies } = useCurrencies()
+  const [totalPrice, setTotalPrice] = useState<number>(0)
+
+  useEffect(() => {
+    const total = items.reduce((total, product) => {
+      const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === product.currency)
+      const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / userCurrency.price
+      return total + (convertedPrice * product.quantity)
+    }, 0);
+    setTotalPrice(total)
+  }, [])
 
   // Check if cart is empty
   if (items.length === 0) {
@@ -52,13 +64,16 @@ const CartPage = () => {
 
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {items.map((item) => {
+                  const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === item.currency)
+                  const convertedPrice = ((priceProductToDollar?.price || 0) * (item?.price || 1)) / userCurrency.price
+
                   return (
-                    <div key={item._id} className="p-4 md:grid md:grid-cols-6 md:items-center">
+                    <div key={item._id.toString()} className="p-4 md:grid md:grid-cols-6 md:items-center">
                       {/* Product info */}
                       <div className="flex items-center md:col-span-3 mb-4 md:mb-0">
                         <div className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-md border border-gray-200 dark:border-gray-700">
                           <Image
-                            src={item.mainImage}
+                            src={item.mainImage || '/imageNotFound.svg'}
                             alt={item.name}
                             fill
                             className="object-cover"
@@ -72,7 +87,7 @@ const CartPage = () => {
                           </h3>
                           <button
                             type="button"
-                            onClick={() => removeFromCart(item._id)}
+                            onClick={() => removeFromCart(item._id.toString())}
                             className="mt-1 text-sm font-medium text-primary hover:text-primary-dark flex items-center"
                           >
                             <XMarkIcon className="h-4 w-4 mr-1" />
@@ -86,6 +101,9 @@ const CartPage = () => {
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {item?.currency} {(item.price || 0).toFixed(2)}
                         </span>
+                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                          {userCurrency?.currency || "$"} {(convertedPrice || 0).toFixed(2)}
+                        </span>
                       </div>
 
                       {/* Quantity */}
@@ -93,7 +111,7 @@ const CartPage = () => {
                         <div className="inline-flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item._id.toString(), item.quantity - 1)}
                             className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <MinusIcon className="h-4 w-4" />
@@ -103,7 +121,7 @@ const CartPage = () => {
                           </span>
                           <button
                             type="button"
-                            onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item._id.toString(), item.quantity + 1)}
                             className="p-2 text-gray-600 dark:text-gray-400 hover:text-primary hover:bg-gray-100 dark:hover:bg-gray-700"
                           >
                             <PlusIcon className="h-4 w-4" />
@@ -112,9 +130,12 @@ const CartPage = () => {
                       </div>
 
                       {/* Total */}
-                      <div className="md:text-right">
+                      <div className="flex flex-col md:text-center mb-4 md:mb-0">
                         <span className="text-base font-medium text-gray-900 dark:text-white">
                           {item?.currency} {(item.price * item.quantity).toFixed(2)}
+                        </span>
+                        <span className="text-base font-medium text-gray-900 dark:text-white">
+                          {userCurrency?.currency} {(convertedPrice * item.quantity).toFixed(2)}
                         </span>
                       </div>
                     </div>
@@ -132,7 +153,7 @@ const CartPage = () => {
                 type="button"
                 onClick={() => {
                   if (window.confirm('Are you sure you want to clear your cart?')) {
-                    items.forEach(item => removeFromCart(item._id));
+                    clearCart();
                   }
                 }}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -185,9 +206,8 @@ const CartPage = () => {
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900 dark:text-white">Total</span>
                     <span className="text-lg font-bold text-primary">
-                      {/* ${totalPrice.toFixed(2)} */}
-                      34135
-                      </span>
+                      {userCurrency.currency} {totalPrice.toFixed(2)}
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Including taxes and fees

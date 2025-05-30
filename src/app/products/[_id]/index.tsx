@@ -1,6 +1,6 @@
 "use client";
 
-import { useState} from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { StarIcon, ShoppingCartIcon, HeartIcon, CreditCardIcon } from "@heroicons/react/24/outline";
@@ -8,23 +8,27 @@ import { HeartIcon as HeartSolidIcon, StarIcon as StarSolidIcon } from "@heroico
 import { useCart } from "@/context/CartContext";
 import { Product, User } from "@/interfaces";
 import { useRouter } from "next/navigation";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
-const ProductDetail = ({product, seller}: {product: Product, seller?: User | null}) => {
+const ProductDetail = ({ product, seller }: { product: Product, seller?: User | null }) => {
   const [selectedImage, setSelectedImage] = useState(0);
+  const router = useRouter()
+  const { addToCart } = useCart();
+  const {listCryptoCurrencies, userCurrency} = useCurrencies();
+
   const [quantity, setQuantity] = useState(1);
   const [isWishlist, setIsWishlist] = useState(false);
-  const { addToCart } = useCart();
-  const router = useRouter()
+
   // const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
   const nameCategories = {
-    electronics:"Electronics",
+    electronics: "Electronics",
     clothing: "Clothing and Accessories",
     home: "Home and Garden",
     sports: "Sports",
     toys: "Toys",
     health: "Health and Beauty",
-    food: "Food", 
+    food: "Food",
     namservicese: "Services",
     other: "Other",
   };
@@ -37,9 +41,7 @@ const ProductDetail = ({product, seller}: {product: Product, seller?: User | nul
 
   const handleBuyer = () => {
     if (!product) return;
-
-    addToCart(product, quantity);
-    router.push("/checkout")
+    router.push(`/checkout/${product._id}/${quantity}`)
   };
 
   const handleQuantityChange = (newQuantity: number) => {
@@ -118,7 +120,17 @@ const ProductDetail = ({product, seller}: {product: Product, seller?: User | nul
           </div>
 
           {/* Product details */}
-          <div className="lg:w-1/2">
+          <div className="relative lg:w-1/2">
+            <button
+              onClick={toggleWishlist}
+              className="absolute top-3 right-3 p-2 bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-white dark:hover:bg-gray-700 z-10"
+            >
+              {isWishlist ? (
+                <HeartSolidIcon className="h-4 w-4 text-[#D300E5]" />
+              ) : (
+                <HeartIcon className="h-4 w-4 text-gray-600 dark:text-gray-400" />
+              )}
+            </button>
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
               <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{product.name}</h1>
 
@@ -136,13 +148,19 @@ const ProductDetail = ({product, seller}: {product: Product, seller?: User | nul
                   ))}
                 </div>
                 <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-                  {product?.rating?.toFixed(1)} ({product.reviews} reviews)
+                  {product?.rating?.toFixed(1)} ({product.reviews||0} reviews)
                 </span>
               </div>
 
               {/* Price */}
               <div className="mb-6">
-                <span className="text-3xl font-bold text-gray-900 dark:text-white">${Number(product?.price).toFixed(2)}</span>
+                <div
+                  className="flex flex-col"
+                >
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">{product.currency}{(product?.price).toFixed(2)}</span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">{userCurrency.currency}{(product?.price * (listCryptoCurrencies.find((crypto) => crypto.symbol === product.currency)?.price || 0) / userCurrency.price).toFixed(2)}</span>
+                </div>
+
                 {product.stock <= 5 && (
                   <span className="ml-4 text-sm text-red-600 font-medium">
                     Only {product.stock} left in stock!
@@ -157,7 +175,6 @@ const ProductDetail = ({product, seller}: {product: Product, seller?: User | nul
 
               {/* Quantity */}
               <div className="mb-6">
-                <h3 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Quantity</h3>
                 <div className="flex items-center">
                   <button
                     onClick={() => handleQuantityChange(quantity - 1)}
@@ -205,17 +222,7 @@ const ProductDetail = ({product, seller}: {product: Product, seller?: User | nul
                     Add to Cart
                   </button>
                 </div>
-                <button
-                  onClick={toggleWishlist}
-                  className="flex-1 sm:flex-none border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 py-3 px-6 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  {isWishlist ? (
-                    <HeartSolidIcon className="h-5 w-5 text-secondary" />
-                  ) : (
-                    <HeartIcon className="h-5 w-5" />
-                  )}
-                  <span className="ml-2 sm:hidden md:inline">Add to Wishlist</span>
-                </button>
+
               </div>
             </div>
 

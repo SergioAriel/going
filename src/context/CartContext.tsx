@@ -13,15 +13,16 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
-  // totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const { handleAlert } = useAlert();
+  // const { userCurrency, listCryptoCurrencies } = useCurrencies()
+
   const [items, setItems] = useState<CartItem[]>([]);
   // const [totalPrice, setTotalPrice] = useState<number>(0);
-  const { handleAlert } = useAlert();
 
   useEffect(() => {
     const storedItems = localStorage.getItem("cart");
@@ -51,7 +52,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         mainImage: product.mainImage,
         quantity,
         addressWallet: product.addressWallet,
-        currency: product.currency
+        currency: product.currency,
       }]
       localStorage.setItem("cart", JSON.stringify(addItem));
       setItems(addItem);
@@ -63,6 +64,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const removeFromCart = (productId: string) => {
     setItems(prevItems => prevItems.filter(item => item._id !== productId));
+    localStorage.setItem("cart", JSON.stringify(items.filter(item => item._id !== productId)))
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -70,6 +72,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       removeFromCart(productId);
       return;
     }
+    localStorage.setItem("cart", JSON.stringify(items.map(item =>
+      item._id === productId ? { ...item, quantity } : item
+    )))
 
     setItems(prevItems =>
       prevItems.map(item =>
@@ -80,25 +85,20 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setItems([]);
+    localStorage.removeItem("cart")
   };
 
   const getTotalItems = () => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-
-  // const getTotalPrice = async () => {
-
-  //   return await items.reduce(async (acc, item) => {
-  //     const total = await acc
-  //     const priceToCurrency = await getSolanaPrice(item.currency);
-
-  //     return total + (item.price * item.quantity) * priceToCurrency
-  //   }, Promise.resolve(0));
-  // };
-
   // useEffect(() => {
-  //   const total = items.reduce((total, item) => total + item.price * item.quantity, 0);
+  //   const total = items.reduce((total, product) => {
+  //     const priceProductToDollar = listCurrencies.find(currency => currency.symbol === product.currency)
+  //     const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / userCurrency.price
+  //     return total + (convertedPrice * product.quantity)
+  //   }, 0);
+  //   setTotalPrice(total)
   // }, [items]);
 
 

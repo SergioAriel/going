@@ -4,7 +4,7 @@ import { Product } from "@/interfaces";
 import client from "../mongodb";
 import { ObjectId, SortDirection } from "mongodb";
 
-export const getOneProduct = async ({ _id }: { _id: string }): Promise<Product> => {
+export const getOneProduct = async (_id: string ): Promise<Product> => {
     const db = client.db("going");
     return (await db
         .collection<Product>("products")

@@ -57,7 +57,7 @@ export interface Product {
   price: number;
   currency: string;
   status: string;
-  images: Array<string>;
+  images: Array<string | File>;
   mainImage: string;
   stock: number;
   location?: string;
@@ -66,7 +66,7 @@ export interface Product {
   isService?: boolean;
   isFeatured?: boolean;
   isOffer?: boolean;
-  offerPercentage?: number;
+  offerPercentage: number;
   reviews?: string[];
   rating: number;
   subcategory?: string;
@@ -74,8 +74,8 @@ export interface Product {
   updatedAt?: Date;
 }
 
-export interface CartItem {
-  _id: string;
+export interface CartItem extends Partial<Product> {
+  _id: string | ObjectId;
   seller: string;
   name: string;
   price: number;
@@ -84,8 +84,8 @@ export interface CartItem {
   addressWallet: string;
   currency: string;
   isOffer?: boolean;
-  offerPercentage?: number;
-  priceOffer?: number;
+  offerPercentage: number;
+  // convertedPrice: number;
 }
 
 export interface Order {
@@ -122,4 +122,11 @@ export interface Reviews {
   _id: string;
   text: string;
   rating: number;
+}
+
+
+export type Currency = {
+	symbol: string,
+	name: string,
+	price: number,
 }

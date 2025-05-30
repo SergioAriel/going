@@ -1,6 +1,6 @@
 "use client";
 
-import { DragEvent, useEffect, useState } from "react";
+import { DragEvent, useState } from "react";
 import Link from "next/link";
 import {
   PhotoIcon,
@@ -11,13 +11,14 @@ import {
 } from "@heroicons/react/24/outline";
 import Image from "next/image";
 import { usePrivy } from "@privy-io/react-auth";
-import { CreateProduct } from "@/interfaces";
+import { Product } from "@/interfaces";
 import { useAlert } from "@/context/AlertContext";
+import { useCurrencies } from "@/context/CurrenciesContext";
 
 
 const UploadProduct = () => {
   const { user } = usePrivy();
-  const [infoProduct, setInfoProduct] = useState<CreateProduct>({
+  const [infoProduct, setInfoProduct] = useState<Partial<Product>>({
     seller: user?.id || "",
     name: "",
     description: "",
@@ -33,7 +34,7 @@ const UploadProduct = () => {
     addressWallet: "",
   });
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [listCryptocurrencies, setListCryptocurrencies] = useState<{ symbol: string; name: string; price: number }[]>([]);
+  const { listCryptoCurrencies } = useCurrencies()
 
   const { handleAlert } = useAlert()
 
@@ -49,17 +50,9 @@ const UploadProduct = () => {
     { name: "Other", value: "other" },
   ];
 
-  useEffect(() => {
-    (async () => {
-      const list = await (await fetch("/api/cryptocurrencies")).json()
-      setListCryptocurrencies(list)
-    })()
-  }, [])
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     if (name === "stock" || name === "price") {
-      console.log(value)
       setInfoProduct(prev => ({ ...prev, [name]: Math.round(parseFloat(value)) || 0 }));
       return
     }
@@ -78,11 +71,11 @@ const UploadProduct = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      setInfoProduct(({ ...infoProduct, images: [...infoProduct.images, ...Array.from(files)] }));
+      setInfoProduct(({ ...infoProduct, images: [...infoProduct.images as Array<File>, ...Array.from(files)] }));
     }
   };
   const handleImageRemove = (index: number) => {
-    setInfoProduct(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== index) }));
+    setInfoProduct(prev => ({ ...prev, images: prev.images?.filter((_, idx) => idx !== index) }));
   };
 
   const handleDrop = (dropIndex: number) => {
@@ -90,7 +83,7 @@ const UploadProduct = () => {
       return; // No change needed
     }
 
-    const imagesArray = [...infoProduct.images];
+    const imagesArray = [...infoProduct.images as File[]];
     const [draggedImage] = imagesArray.splice(draggedIndex, 1);
     imagesArray.splice(dropIndex, 0, draggedImage);
 
@@ -116,7 +109,7 @@ const UploadProduct = () => {
           formDataToSend.append(key, item)
         });
       } else {
-        formDataToSend.append(key, typeof value === "boolean" ? value.toString() : value);
+        formDataToSend.append(key, typeof value === "boolean" ? value.toString() : String(value));
       }
     });
     // Logic to send data to the server would go here
@@ -356,7 +349,7 @@ const UploadProduct = () => {
                           step="0.01"
                           id="price"
                           name="price"
-                          value={infoProduct.price.toString()}
+                          value={infoProduct?.price?.toString()}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           placeholder="0.00"
@@ -379,7 +372,7 @@ const UploadProduct = () => {
                           required
                         >
                           <option value="" disabled>Select a currency</option>
-                          {listCryptocurrencies?.map((crypto) => (
+                          {listCryptoCurrencies?.map((crypto) => (
                             <option key={crypto.symbol} value={crypto.symbol}>{`${crypto.name} - ${crypto.symbol}`}</option>
                           ))}
                         </select>
@@ -390,7 +383,7 @@ const UploadProduct = () => {
                   <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                     {
-                      infoProduct.price * (listCryptocurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
+                      (infoProduct?.price || 1) * (listCryptoCurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
                     } USD
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
@@ -417,7 +410,7 @@ const UploadProduct = () => {
                       if (files) {
                         setInfoProduct((prev) => ({
                           ...prev,
-                          images: [...prev.images, ...Array.from(files)],
+                          images: [...prev?.images as Array<File>, ...Array.from(files)],
                         }));
                       }
                     }}
@@ -447,7 +440,7 @@ const UploadProduct = () => {
                     </div>
                   </div>
                   {
-                    !!infoProduct?.images.length &&
+                    !!infoProduct?.images?.length &&
                     <div className="grid grid-cols-2 gap-4 mb-4">
 
                       {infoProduct.images.map((image, index) => {
@@ -471,7 +464,7 @@ const UploadProduct = () => {
 
                             }
                             <Image
-                              src={URL.createObjectURL(image)}
+                              src={URL.createObjectURL(image as File)}
                               alt={`Product Image ${index + 1}`}
                               className="w-full h-auto rounded-lg"
                               width={200}

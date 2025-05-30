@@ -35,7 +35,7 @@ export const UserProvider = ({children}: {children: ReactNode}) => {
         facebook: "",
         settings: {
             theme: "light",
-            currency: "USD",
+            currency: "",
             lenguage: "en",
         }
       });

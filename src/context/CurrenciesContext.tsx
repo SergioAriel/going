@@ -2,15 +2,12 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { useUser } from "./UserContext";
+import { getCurrencies } from "@/lib/ServerActions/cryptocurrencies";
+import { Currency } from "@/interfaces";
 
-type Currency = {
-	symbol: string,
-	name: string,
-	price: number,
-}
 
 interface CurrenciesContextType {
-	listCurrencies: Currency[];
+	listCryptoCurrencies: Currency[];
 	userCurrency: {
 		currency: string;
 		price: number;
@@ -21,7 +18,7 @@ const CurrenciesContext = createContext<CurrenciesContextType | undefined>(undef
 
 export const CurrenciesProvider = ({ children }: { children: React.ReactNode }) => {
 	const { userData } = useUser();
-	const [listCurrencies, setCurrencies] = useState([])
+	const [listCryptoCurrencies, setCurrencies] = useState<Currency[]>([])
 	const [userCurrency, setUserCurrency] = useState({
 		currency: userData.settings.currency,
 		price: 0
@@ -29,23 +26,17 @@ export const CurrenciesProvider = ({ children }: { children: React.ReactNode }) 
 
 	useEffect(() => {
 		(async () => {
-			const response = await fetch(`/api/cryptocurrencies`);
-			if (!response.ok) {
-				throw new Error("Failed to fetch data");
-			}
-			const data = await response.json();
-			console.log(data);
-
-			setCurrencies(data);
+			const currencies:Currency[] = await getCurrencies();
+			setCurrencies(currencies);
 			setUserCurrency({
 				currency: userData.settings.currency,
-				price: data.find((currency: Currency) => currency.symbol === userData.settings.currency)?.price || 0
+				price: currencies.find((currency: Currency) => currency.symbol === userData.settings.currency)?.price || 0
 			});
 		})()
-	}, [userData.settings.currency]);
+	}, [userData]);
 
 	return (
-		<CurrenciesContext.Provider value={{ listCurrencies, userCurrency }}>
+		<CurrenciesContext.Provider value={{ listCryptoCurrencies, userCurrency }}>
 			{children}
 		</CurrenciesContext.Provider>
 	);
