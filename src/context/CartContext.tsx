@@ -3,7 +3,6 @@
 import { CartItem, Product } from "@/interfaces";
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 import { useAlert } from "./AlertContext";
-import { useCurrencies } from "./CurrenciesContext";
 
 // Definir tipo de producto para evitar uso de 'any'
 
@@ -14,17 +13,16 @@ interface CartContextType {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
-  totalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { handleAlert } = useAlert();
-  const { userCurrency, listCryptoCurrencies: listCurrencies } = useCurrencies()
+  // const { userCurrency, listCryptoCurrencies } = useCurrencies()
 
   const [items, setItems] = useState<CartItem[]>([]);
-  const [totalPrice, setTotalPrice] = useState<number>(0);
+  // const [totalPrice, setTotalPrice] = useState<number>(0);
 
   useEffect(() => {
     const storedItems = localStorage.getItem("cart");
@@ -34,7 +32,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const addToCart = (product: Product, quantity: number) => {
-    const priceProductToDollar = listCurrencies.find(currency => currency.symbol === product.currency)
     const existingItem = items.find(item => item._id === product._id);
 
     if (existingItem) {
@@ -46,7 +43,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem("cart", JSON.stringify(addItem));
       setItems(addItem);
     } else {
-      const convertedPrice = ( (priceProductToDollar?.price || 0) * product.price ) / userCurrency.price
       const addItem = [...items, {
         _id: product._id.toString(),
         seller: product.seller,
@@ -57,7 +53,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         quantity,
         addressWallet: product.addressWallet,
         currency: product.currency,
-        convertedPrice
       }]
       localStorage.setItem("cart", JSON.stringify(addItem));
       setItems(addItem);
@@ -69,6 +64,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const removeFromCart = (productId: string) => {
     setItems(prevItems => prevItems.filter(item => item._id !== productId));
+    localStorage.setItem("cart", JSON.stringify(items.filter(item => item._id !== productId)))
   };
 
   const updateQuantity = (productId: string, quantity: number) => {
@@ -76,6 +72,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       removeFromCart(productId);
       return;
     }
+    localStorage.setItem("cart", JSON.stringify(items.map(item =>
+      item._id === productId ? { ...item, quantity } : item
+    )))
 
     setItems(prevItems =>
       prevItems.map(item =>
@@ -86,17 +85,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setItems([]);
+    localStorage.removeItem("cart")
   };
 
   const getTotalItems = () => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
 
-  useEffect(() => {
-    
-    const total = items.reduce((total, item) => total + (item.convertedPrice * item.quantity), 0);
-    setTotalPrice(total)
-  }, [items]);
+  // useEffect(() => {
+  //   const total = items.reduce((total, product) => {
+  //     const priceProductToDollar = listCurrencies.find(currency => currency.symbol === product.currency)
+  //     const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / userCurrency.price
+  //     return total + (convertedPrice * product.quantity)
+  //   }, 0);
+  //   setTotalPrice(total)
+  // }, [items]);
 
 
   return (
@@ -107,7 +110,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       updateQuantity,
       clearCart,
       getTotalItems,
-      totalPrice
+      // totalPrice
     }}>
       {children}
     </CartContext.Provider>

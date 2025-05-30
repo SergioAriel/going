@@ -46,28 +46,32 @@ export const AlertProvider = ({ children }: { children: React.ReactNode }) => {
             <>
                 {
                     alert.status &&
-                    <div
-                        className="relative w-screen z-50"
-                    >
+                    <div className="fixed left-1/2 -translate-x-1/2 top-8 z-50 w-full flex justify-center pointer-events-none">
                         <div
                             className={`
-                                fixed left-1/2 -translate-x-1/2 top-10 p-4 pt-7 rounded-md w-1/2 min-h-20 text-wrap flex items-center justify-center  bg-gray-700 font-semibold
-                                ${alert.isError && "text-red-500 "}   
+                                relative flex items-center gap-3 px-6 py-4 rounded-lg shadow-lg min-w-[320px] max-w-md w-full
+                                ${alert.isError
+                                    ? "bg-red-50 border border-red-400 text-red-700"
+                                    : "bg-green-50 border border-green-400 text-green-700"
+                                }
+                                pointer-events-auto
+                                animate-fade-in
                             `}
                         >
+                            <span className="text-2xl">
+                                {alert.isError ? "❌" : "✅"}
+                            </span>
+                            <span className="flex-1 font-medium break-words">
+                                {alert.message}
+                            </span>
                             <button
                                 type="button"
                                 onClick={() => setAlert({ ...alert, status: false })}
-                                className="absolute top-2 right-2 bg-gray-400 text-white rounded-full h-5 w-5"
+                                className="absolute top-2 right-2 text-lg text-gray-400 hover:text-gray-700 transition-colors"
+                                aria-label="Cerrar alerta"
                             >
-                                <span className=" inline-block -translate-y-[15%]">
-                                    &times;
-                                </span>
+                                &times;
                             </button>
-                            <span className="w-full break-words">
-                                {alert.message} 
-                            </span>
-
                         </div>
                     </div>
                 }

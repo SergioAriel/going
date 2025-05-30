@@ -10,10 +10,12 @@ import { Product } from "@/interfaces";
 import { useCurrencies } from "@/context/CurrenciesContext";
 import { Tooltip } from "@material-tailwind/react";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
 
 
 // Product Card Component with Add to Cart functionality
 const ProductCard = ({ product }: { product: Product }) => {
+  const router = useRouter()
   const { addToCart } = useCart();
   const { listCryptoCurrencies, userCurrency } = useCurrencies();
   const [isWishlist, setIsWishlist] = useState(false);
@@ -35,8 +37,10 @@ const ProductCard = ({ product }: { product: Product }) => {
     setConvertedPrice(listCryptoCurrencies.find((crypto) => crypto.symbol === product.currency)?.price || 0)
   }, [listCryptoCurrencies])
 
-  const handleToBuy = () => {
-
+  const handleToBuy = (e: React.MouseEvent<HTMLElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/checkout/${product._id}/${1}`)
   }
 
 
@@ -127,15 +131,15 @@ const ProductCard = ({ product }: { product: Product }) => {
                 )
               }
               {/* Original Price and Offer */}
-              {product.offerPercentage ? (
+              {!product.offerPercentage ? (
                 <div className="flex items-center text-primary">
                   <span className="text-md font-bold ">
                     {product.currency} {(product.price * (1 - ((product.offerPercentage || 0) / 100))).toFixed(2)}
                   </span>
-                  <p className="text-xs">(-{(product.offerPercentage || 3)}%)</p>
+                  <p className="text-xs">(-{(product.offerPercentage || 0)}%)</p>
                 </div>
               ) : (
-                <span className="text-lg font-bold text-gray-900 dark:text-white">
+                <span className="text-lg font-bold text-primary">
                   {product.currency} {product.price.toFixed(2)}
                 </span>
               )}
@@ -148,7 +152,7 @@ const ProductCard = ({ product }: { product: Product }) => {
                   {userCurrency.currency} {product.price.toFixed(2)}
                 </span>
                 <span className="line-through text-gray-500 dark:text-gray-400">
-                  {userCurrency.currency} {((product.price * convertedPrice) / userCurrency.price).toFixed(2)}
+                  {userCurrency.currency} {((product.price * (convertedPrice || 1)) / userCurrency.price).toFixed(2)}
                 </span>
               </div>
             </div>
@@ -157,7 +161,7 @@ const ProductCard = ({ product }: { product: Product }) => {
             <div className="flex flex-col gap-2">
               {/* Agregar al carrito: botón sólido violeta */}
               <button
-                onClick={handleAddToCart}
+                onClick={handleToBuy}
                 className={`p-2 rounded-full transition-colors ${product.stock > 0
                   ? 'bg-secondary text-white hover:bg-secondary-dark'
                   : 'bg-gray-300 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
@@ -169,7 +173,7 @@ const ProductCard = ({ product }: { product: Product }) => {
 
               {/* Comprar ahora: botón outline celeste */}
               <button
-                onClick={handleToBuy}
+                onClick={handleAddToCart}
                 className={`relative p-2 rounded-full   outline-2 outline-primary text-primary hover:bg-primary hover:text-white transition-colors ${product.stock <= 0 ? 'opacity-50 cursor-not-allowed' : ''
                   }`}
                 disabled={product.stock <= 0}
@@ -178,10 +182,6 @@ const ProductCard = ({ product }: { product: Product }) => {
                 <ShoppingCartIcon className="h-5 w-5" />
               </button>
             </div>
-
-
-
-
           </div>
         </div>
       </div>

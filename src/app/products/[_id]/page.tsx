@@ -5,12 +5,8 @@ import { getUser } from "@/lib/ServerActions/users";
 
 const ProductDetailPage = async ({ params }: { params: Promise<{ _id: string }> }) => {
   // const [relatedProducts, setRelatedProducts] = ...;
-
-  const _id = await params;
-
+  const { _id } = await params;
   const product = await getOneProduct(_id)
-  console.log(product)
-
   if (!product) {
     return (
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen py-20">

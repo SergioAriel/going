@@ -21,7 +21,6 @@ export const AddressesTab = () => {
   const [selectedEditAddress, setSelectedEditAddress] = useState<number | null>(null);
 
   const handleUser = async (indexAddress: number | null) => {
-    console.log("address", address);
     const fundName = userData?.addresses.find((savedAddress) => savedAddress.name === address.name);
     if (fundName) {
       handleAlert({

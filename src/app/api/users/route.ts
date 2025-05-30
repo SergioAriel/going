@@ -30,8 +30,6 @@ export const PUT = async (request: Request) => {
     const user: User = await request.json();
 
     const db = client.db("going");
-
-    console.log(user)
     const updatedUser = await db.collection<User>("users").updateOne(
         { _id: user._id },
         { $set: { ...user } }

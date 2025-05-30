@@ -27,6 +27,5 @@ export const getOrders = async (find: { buyerID?: string | undefined, sellers: s
     const orders = (await db.collection<Order>("orders")
         .find(find)
         .toArray()).map((order) => ({ ...order, _id: order._id.toString() }))
-        console.log("orders", orders);
     return orders;
 }

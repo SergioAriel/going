@@ -41,9 +41,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
 
   const handleBuyer = () => {
     if (!product) return;
-
-    addToCart(product, quantity);
-    router.push("/checkout")
+    router.push(`/checkout/${product._id}/${quantity}`)
   };
 
   const handleQuantityChange = (newQuantity: number) => {

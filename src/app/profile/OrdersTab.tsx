@@ -11,7 +11,6 @@ export const OrdersTab = () => {
   useEffect(() => {
     (async () => {
       const orders = await getOrders({ sellers: userData?._id })
-      console.log(userData, orders)
       setOrders(orders)
     })()
 
