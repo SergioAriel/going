@@ -40,10 +40,10 @@ export const metadata: Metadata = {
     type: 'website',
   },
     twitter: {
-    card: "summary_large_image",
+    card: "summary",
     title: "GOING — The Decentralized Marketplace",
     description: "Experience the future of commerce with GOING. Try the live demo now.",
-    images: ["https://going-taupe.vercel.app/goingLogo.png"],
+    images: ["https://going-taupe.vercel.app/logo.png"],
   }
 };
 
