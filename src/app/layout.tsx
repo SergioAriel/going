@@ -39,6 +39,12 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
+    twitter: {
+    card: "summary_large_image",
+    title: "GOING — The Decentralized Marketplace",
+    description: "Experience the future of commerce with GOING. Try the live demo now.",
+    images: ["https://going-taupe.vercel.app/goingLogo.png"],
+  }
 };
 
 export default async function RootLayout({
