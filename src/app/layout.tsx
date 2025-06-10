@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: 'GOING',
     images: [
       {
-        url: 'https://going-taupe.vercel.app/goingLogo.png', // Must be an absolute URL
+        url: 'https://going-taupe.vercel.app/logo.png', // Must be an absolute URL
         width: 800,
         height: 600,
       }
@@ -52,7 +52,7 @@ export default async function RootLayout({
 
 
   return (
-    <html lang="es">
+    <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
