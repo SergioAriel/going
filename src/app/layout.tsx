@@ -42,7 +42,7 @@ export default async function RootLayout({
         {/* Open Graph */}
         <meta property="og:title" content="GOING — The Decentralized Marketplace" />
         <meta property="og:description" content="Experience the future of commerce with GOING. Try the live demo now." />
-        <meta property="og:image" content="/public/goingLogo.png"/>
+        <meta property="og:image" content="/goingLogo.png"/>
         <meta property="og:url" content="https://going-taupe.vercel.app/" />
         <meta property="og:type" content="website" />
 
@@ -50,7 +50,7 @@ export default async function RootLayout({
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="GOING — The Decentralized Marketplace" />
         <meta name="twitter:description" content="Experience the future of commerce with GOING. Try the live demo now." />
-        <meta name="twitter:image" content="/public/goingLogo.png" />
+        <meta name="twitter:image" content="/goingLogo.png" />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
