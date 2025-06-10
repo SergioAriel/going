@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     siteName: 'GOING',
     images: [
       {
-        url: '/goingLogo.png', // Must be an absolute URL
+        url: 'https://going-taupe.vercel.app/goingLogo.png', // Must be an absolute URL
         width: 800,
         height: 600,
       }
