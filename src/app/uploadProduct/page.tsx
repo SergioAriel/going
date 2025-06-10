@@ -18,12 +18,12 @@ import { useCurrencies } from "@/context/CurrenciesContext";
 
 const UploadProduct = () => {
   const { user } = usePrivy();
-  const [infoProduct, setInfoProduct] = useState<Partial<Product>>({
+  const [infoProduct, setInfoProduct] = useState<Partial<Omit<Product, "price">> & { price: string }>({
     seller: user?.id || "",
     name: "",
     description: "",
     category: "",
-    price: 0,
+    price: "0",
     currency: "",
     stock: 0,
     location: "",
@@ -52,13 +52,17 @@ const UploadProduct = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === "stock" || name === "price") {
+    if (name === "price") {
+      setInfoProduct(prev => ({ ...prev, [name]: value })); // Almacenar como string temporalmente
+      return;
+    }
+    if (name === "stock") {
       setInfoProduct(prev => ({ ...prev, [name]: Math.round(parseFloat(value)) || 0 }));
-      return
+      return;
     }
     if (name === "tags") {
       setInfoProduct(prev => ({ ...prev, [name]: value.split(",").map((tag: string) => tag.trim()).join(", ") }));
-      return
+      return;
     }
     setInfoProduct(prev => ({ ...prev, [name]: value }));
   };
@@ -104,15 +108,17 @@ const UploadProduct = () => {
     const formDataToSend = new FormData();
 
     Object.entries(infoProduct).forEach(([key, value]) => {
-      if (Array.isArray(value)) {
+      if (key === "price") {
+        formDataToSend.append(key, parseFloat(value as string).toString()); // Convertir a número antes de enviar
+      } else if (Array.isArray(value)) {
         value.forEach((item) => {
-          formDataToSend.append(key, item)
+          formDataToSend.append(key, item);
         });
       } else {
         formDataToSend.append(key, typeof value === "boolean" ? value.toString() : String(value));
       }
     });
-    // Logic to send data to the server would go here
+
     const requiredFields = ["name", "description", "category", "price", "currency", "images"];
     const isValid = requiredFields.every(field => infoProduct[field as keyof typeof infoProduct] !== "");
 
@@ -313,7 +319,9 @@ const UploadProduct = () => {
                   <select
                     id="addressWallet"
                     name="addressWallet"
-                    value={!!(user?.linkedAccounts[0]?.type === "wallet") ? user?.linkedAccounts[0]?.address : ""}
+                    value={ infoProduct?.addressWallet
+                      // !!(user?.linkedAccounts[0]?.type === "wallet") ? user?.linkedAccounts[0]?.address : ""
+                    }
                     onChange={handleInputChange}
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                   >
@@ -345,11 +353,10 @@ const UploadProduct = () => {
                       <div className="flex items-center">
                         <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
                         <input
-                          type="number"
-                          step="0.01"
+                          type="text" // Cambiado de "number" a "text"
                           id="price"
                           name="price"
-                          value={infoProduct?.price?.toString()}
+                          value={infoProduct?.price}
                           onChange={handleInputChange}
                           className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
                           placeholder="0.00"
@@ -383,7 +390,7 @@ const UploadProduct = () => {
                   <CurrencyDollarIcon className="h-5 w-5 text-gray-400 mr-2" />
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                     {
-                      (infoProduct?.price || 1) * (listCryptoCurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
+                      (parseFloat(infoProduct?.price as string) || 1) * (listCryptoCurrencies.find((crypto) => crypto.symbol === infoProduct.currency)?.price || 0)
                     } USD
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">

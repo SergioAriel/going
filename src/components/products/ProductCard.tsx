@@ -30,7 +30,6 @@ const ProductCard = ({ product }: { product: Product }) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product, 1);
-    // Optional: Add feedback
   };
 
   useEffect(() => {
@@ -43,6 +42,7 @@ const ProductCard = ({ product }: { product: Product }) => {
     router.push(`/checkout/${product._id}/${1}`)
   }
 
+  console.log(userCurrency.price)
 
 
   return (
@@ -120,18 +120,22 @@ const ProductCard = ({ product }: { product: Product }) => {
                 userCurrency && (
                   <div className="flex  text-secondary">
                     <span className="text-lg font-bold">
-                      {userCurrency.currency} {((product?.price * (1 - ((product.offerPercentage || 0) / 100)) * convertedPrice) / userCurrency?.price).toFixed(2)}
+                      {userCurrency.currency} {((product?.price * (1 - ((product.offerPercentage || 0) / 100)) * convertedPrice) / (userCurrency?.price || 1)).toFixed(2)}
                     </span>
                     <Tooltip content="Approximate price converted to your currency">
                       <InformationCircleIcon className="w-4 h-4 text-secondary" />
                     </Tooltip>
-                    <p className=" self-center text-xs">(-{(product.offerPercentage || 0)}%)</p>
+                    {
+                      product.isOffer && (
+                        <p className=" self-center text-xs">(-{(product.offerPercentage || 0)}%)</p>
+                      )
+                    }
 
                   </div>
                 )
               }
               {/* Original Price and Offer */}
-              {!product.offerPercentage ? (
+              {product.offerPercentage ? (
                 <div className="flex items-center text-primary">
                   <span className="text-md font-bold ">
                     {product.currency} {(product.price * (1 - ((product.offerPercentage || 0) / 100))).toFixed(2)}
@@ -140,21 +144,26 @@ const ProductCard = ({ product }: { product: Product }) => {
                 </div>
               ) : (
                 <span className="text-lg font-bold text-primary">
-                  {product.currency} {product.price.toFixed(2)}
+                  {product.currency} {product.price}
                 </span>
               )}
 
-              <div
-                className="flex text-xs gap-2"
-              >
+              {/* Original Price with Conversion */}
+              {
+                userCurrency && product.isOffer && (
+                  <div
+                    className="flex text-xs gap-2"
+                  >
 
-                <span className="line-through text-gray-500 dark:text-gray-400">
-                  {userCurrency.currency} {product.price.toFixed(2)}
-                </span>
-                <span className="line-through text-gray-500 dark:text-gray-400">
-                  {userCurrency.currency} {((product.price * (convertedPrice || 1)) / userCurrency.price).toFixed(2)}
-                </span>
-              </div>
+                    <span className="line-through text-gray-500 dark:text-gray-400">
+                      {userCurrency.currency} {product.price}
+                    </span>
+                    <span className="line-through text-gray-500 dark:text-gray-400">
+                      {userCurrency.currency} {((product.price * (convertedPrice || 1)) / (userCurrency.price || 1)).toFixed(2)}
+                    </span>
+                  </div>
+                )
+              }
             </div>
 
             {/* Buttons */}

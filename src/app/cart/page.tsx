@@ -18,7 +18,7 @@ const CartPage = () => {
   useEffect(() => {
     const total = items.reduce((total, product) => {
       const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === product.currency)
-      const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / userCurrency.price
+      const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / (userCurrency.price || 1)
       return total + (convertedPrice * product.quantity)
     }, 0);
     setTotalPrice(total)
@@ -65,7 +65,7 @@ const CartPage = () => {
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {items.map((item) => {
                   const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === item.currency)
-                  const convertedPrice = ((priceProductToDollar?.price || 0) * (item?.price || 1)) / userCurrency.price
+                  const convertedPrice = ((priceProductToDollar?.price || 0) * (item?.price || 1)) / (userCurrency.price || 1)
 
                   return (
                     <div key={item._id.toString()} className="p-4 md:grid md:grid-cols-6 md:items-center">

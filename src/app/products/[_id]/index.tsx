@@ -86,7 +86,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
               {product.images && product.images.length > 0 && (
                 <div className="relative aspect-square">
                   <Image
-                    src={product.images[selectedImage]}
+                    src={product.images[selectedImage] as string || "/imageNotFound.svg"}
                     alt={product.name}
                     fill
                     className="object-contain"
@@ -107,7 +107,7 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
                       }`}
                   >
                     <Image
-                      src={image}
+                      src={image as string || "/imageNotFound.svg"}
                       alt={`${product.name} thumbnail ${index + 1}`}
                       fill
                       sizes="100%"
@@ -157,8 +157,8 @@ const ProductDetail = ({ product, seller }: { product: Product, seller?: User | 
                 <div
                   className="flex flex-col"
                 >
-                  <span className="text-3xl font-bold text-gray-900 dark:text-white">{product.currency}{(product?.price).toFixed(2)}</span>
-                  <span className="text-3xl font-bold text-gray-900 dark:text-white">{userCurrency.currency}{(product?.price * (listCryptoCurrencies.find((crypto) => crypto.symbol === product.currency)?.price || 0) / userCurrency.price).toFixed(2)}</span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">{product.currency}{Number(product?.price)}</span>
+                  <span className="text-3xl font-bold text-gray-900 dark:text-white">{userCurrency.currency}{(Number(product?.price) * (listCryptoCurrencies.find((crypto) => crypto.symbol === product.currency)?.price || 0) / (userCurrency.price || 1)).toFixed(2)}</span>
                 </div>
 
                 {product.stock <= 5 && (

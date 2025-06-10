@@ -53,7 +53,7 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
         name: data.get("name") as string,
         description: data.get("description") as string,
         category: data.get("category") as string,
-        price: data.get("price") ? parseInt(data.get("price") as string) : 1,
+        price: data.get("price") ? parseFloat(data.get("price") as string) : 1,
         currency: data.get("currency") as string,
         stock: data.get("stock") ? parseInt(data.get("stock") as string) : 1,
         location: data.get("location") as string,
@@ -71,7 +71,6 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     }
     // upload multiple images on cloudinary
 
-    
 
 
     const db = client.db("going");
@@ -88,5 +87,5 @@ export const POST = async (request: NextRequest): Promise<NextResponse> => {
     );
     console.log("Product added successfully:", product);
     // Return the result
-    return NextResponse.json({ result: product }, { status: 200 });
+    return NextResponse.json({ result: {} }, { status: 200 });
 };

@@ -232,7 +232,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
   useEffect(() => {
     const total = items.reduce((total, product) => {
       const priceProductToDollar = listCryptoCurrencies.find(currency => currency.symbol === product.currency)
-      const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / userCurrency.price
+      const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / (userCurrency.price || 1)
       return total + (convertedPrice * product.quantity)
     }, 0);
     setTotalPrice(total)
@@ -630,7 +630,7 @@ const CheckoutPage = ({ items, clearCart }: { items: CartItem[], clearCart?: () 
                         <span className="text-lg font-semibold text-gray-900 dark:text-white">Total</span>
                         <span className="text-lg font-semibold text-primary">
                           {
-                            `${userCurrency.currency} ${(totalPrice * userCurrency.price).toFixed(2)}`
+                            `${userCurrency.currency} ${(totalPrice * (userCurrency.price || 1)).toFixed(2)}`
                           }
 
                         </span>

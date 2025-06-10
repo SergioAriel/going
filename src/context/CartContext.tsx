@@ -48,11 +48,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         seller: product.seller,
         name: product.name,
         price: product.price,
-        priceOffer: product.isOffer && product.offerPercentage ? product.price - (product.price * product.offerPercentage) : undefined,
+        priceOffer: product.isOffer && product.offerPercentage ? Number(product.price) - (Number(product.price) * product.offerPercentage) : undefined,
         mainImage: product.mainImage,
         quantity,
         addressWallet: product.addressWallet,
         currency: product.currency,
+        offerPercentage: product.offerPercentage || 0,
+        isOffer: product.isOffer || false,
       }]
       localStorage.setItem("cart", JSON.stringify(addItem));
       setItems(addItem);
@@ -91,16 +93,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const getTotalItems = () => {
     return items.reduce((total, item) => total + item.quantity, 0);
   };
-
-  // useEffect(() => {
-  //   const total = items.reduce((total, product) => {
-  //     const priceProductToDollar = listCurrencies.find(currency => currency.symbol === product.currency)
-  //     const convertedPrice = ((priceProductToDollar?.price || 0) * (product?.price || 1)) / userCurrency.price
-  //     return total + (convertedPrice * product.quantity)
-  //   }, 0);
-  //   setTotalPrice(total)
-  // }, [items]);
-
 
   return (
     <CartContext.Provider value={{
