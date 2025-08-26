@@ -6,7 +6,7 @@
 
 ### 🔗 Key Links
 
-*   **[View Our Grant Pitch Deck (PDF)](./GOING.pptx)**
+*   **[View Our Grant Pitch Deck (PDF)](./GOING.pdf)**
 *   **[Watch Our Product Demo (2 min)](https://youtu.be/KCRissdo1IA?si=JSJTwileMcCEJupP)**
 *   **[Visit Our Website](https://going-taupe.vercel.app)**
 *   **[Follow us on X (Twitter)](https://x.com/going_market)**
