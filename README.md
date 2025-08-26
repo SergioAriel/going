@@ -6,7 +6,7 @@
 
 ### 🔗 Key Links
 
-*   **[View Our Grant Pitch Deck (PDF)](./going_grant_pitch_deck.pdf)**
+*   **[View Our Grant Pitch Deck (PDF)](./going.pdf)**
 *   **[Watch Our Product Demo (2 min)](https://youtu.be/KCRissdo1IA?si=JSJTwileMcCEJupP)**
 *   **[Visit Our Website](https://going-taupe.vercel.app)**
 *   **[Follow us on X (Twitter)](https://x.com/going_market)**
@@ -17,7 +17,7 @@
 
 *   **[>> Web Application (`going_web`)](https://github.com/SergioAriel/going_web)**
 *   **[>> Mobile Application (`going_mobile`)](https://github.com/SergioAriel/going_mobile)**
-
+*   **[>> Mobile Delivery Application (`going_delivery`)](https://github.com/SergioAriel/going_delivery)**
 ---
 
 ## 💡 About The Project
